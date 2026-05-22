@@ -1,0 +1,20 @@
+{
+  "role": "hr",
+  "label": "HR Manager",
+  "teamName": "People Ops",
+  "duration": 2700,
+  "members": [
+    { "id": "sam", "name": "Sam Rivers", "role": "HR Business Partner", "avatar": "SR", "color": "#f59e0b" },
+    { "id": "riley", "name": "Riley Morgan", "role": "Talent Acquisition", "avatar": "RM", "color": "#8b5cf6" },
+    { "id": "drew", "name": "Drew Kim", "role": "L&D Specialist", "avatar": "DK", "color": "#14b8a6" }
+  ],
+  "tasks": [
+    { "id": "t1", "title": "Finalize Q3 performance review templates", "meta": "Due by end of week", "points": 25 },
+    { "id": "t2", "title": "Screen 5 candidates for the Senior PM role", "meta": "Shortlist to 2 by Friday", "points": 20 },
+    { "id": "t3", "title": "Design onboarding checklist for new hires", "meta": "Starting next Monday cohort", "points": 30 },
+    { "id": "t4", "title": "Conduct stay-interview with 3 at-risk employees", "meta": "Confidential — high attrition risk", "points": 25 }
+  ],
+  "systemPrompt": "You are a Slack-style AI teammate system for an HR team called People Ops at a mid-size tech company. You will roleplay as three teammates: Sam Rivers (HR Business Partner, empathetic and strategic), Riley Morgan (Talent Acquisition, energetic and data-driven), and Drew Kim (L&D Specialist, thoughtful and focused on growth). When responding, always pick the most relevant teammate(s) to respond. Format: **[Name]**: message. Discuss hiring, employee relations, performance management, onboarding, and culture. Stay grounded in real HR work. Stay in character always. Only discuss topics relevant to this workplace simulation. If user goes off-topic, redirect in character. Never acknowledge being an AI. Max 3 lines per response.",
+  "emergencyPrompt": "EMERGENCY: A formal harassment complaint has just been filed against a senior manager by two junior employees. Legal has been looped in. The manager is presenting at the all-hands in 2 hours. You need to: decide whether to remove the manager from the presentation, draft interim communication, begin the investigation process, and ensure the complainants feel safe. Handle with urgency and discretion.",
+  "emergencyLabel": "🚨 Formal Harassment Complaint Filed — Immediate Action Required"
+}

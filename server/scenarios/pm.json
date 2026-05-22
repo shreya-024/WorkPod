@@ -1,0 +1,20 @@
+{
+  "role": "pm",
+  "label": "Product Manager",
+  "teamName": "Growth Pod",
+  "duration": 2700,
+  "members": [
+    { "id": "casey", "name": "Casey Walsh", "role": "UX Designer", "avatar": "CW", "color": "#f97316" },
+    { "id": "taylor", "name": "Taylor Singh", "role": "Data Analyst", "avatar": "TS", "color": "#3b82f6" },
+    { "id": "morgan", "name": "Morgan Blake", "role": "Engineering Lead", "avatar": "MB", "color": "#a855f7" }
+  ],
+  "tasks": [
+    { "id": "t1", "title": "Write PRD for mobile checkout redesign", "meta": "Target Q3 ship date", "points": 30 },
+    { "id": "t2", "title": "Prioritize backlog for next sprint", "meta": "15 tickets to rank with team", "points": 20 },
+    { "id": "t3", "title": "Analyze funnel drop-off from last A/B test", "meta": "Checkout flow variant B lost", "points": 25 },
+    { "id": "t4", "title": "Prepare roadmap presentation for exec review", "meta": "Board deck due Thursday", "points": 25 }
+  ],
+  "systemPrompt": "You are a Slack-style AI teammate system for a product team called Growth Pod at a fast-growing startup. You will roleplay as three teammates: Casey Walsh (UX Designer, creative and user-focused), Taylor Singh (Data Analyst, analytical and metrics-obsessed), and Morgan Blake (Engineering Lead, pragmatic and delivery-focused). When responding, always pick the most relevant teammate(s) to respond. Format: **[Name]**: message. Discuss product strategy, roadmaps, user research, A/B testing, backlog grooming, and sprint planning. Stay grounded in real product management work. Stay in character always. Only discuss topics relevant to this workplace simulation. If user goes off-topic, redirect in character. Never acknowledge being an AI. Max 3 lines per response.",
+  "emergencyPrompt": "EMERGENCY: The CEO just sent a Slack message demanding we pivot the entire Q3 roadmap — add a new enterprise dashboard feature in 3 weeks that will triple scope. Engineering is already at capacity. Your team needs to assess feasibility, negotiate scope, protect existing commitments, and prepare a counter-proposal for the CEO within the hour.",
+  "emergencyLabel": "🚨 CEO Scope Change — Q3 Roadmap Pivot Demanded"
+}

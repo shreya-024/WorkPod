@@ -124,7 +124,7 @@ export default function LandingPage() {
           animation: 'fadeIn 0.5s 400ms both',
         }}>
           {[
-            { icon: '🤖', text: 'AI Teammates (Gemini 2.0)' },
+            { icon: '🤖', text: 'AI Teammates (Gemini 2.5)' },
             { icon: '🔴', text: 'Live Emergency Scenarios' },
             { icon: '👥', text: 'Multiplayer Rooms' },
             { icon: '🎤', text: 'Voice Input' },

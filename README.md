@@ -57,7 +57,7 @@ Open `http://localhost:5173`
 | Backend | Express, Socket.io |
 | Database | MongoDB + Mongoose |
 | Auth | JWT (local accounts) + guest mode |
-| AI | Gemini 2.0 Flash (`@google/generative-ai`) |
+| AI | Gemini 2.5 Flash (`@google/generative-ai`) |
 | Voice | Web Speech API (Chrome) |
 
 ## Features

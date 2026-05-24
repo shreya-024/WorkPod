@@ -1,14 +1,19 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// gemini-2.0-flash free-tier quota is often 0; 2.5-flash is the current GA free-tier model
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 
 const model = genAI.getGenerativeModel({
-  model: 'gemini-2.0-flash',
+  model: GEMINI_MODEL,
   generationConfig: {
     maxOutputTokens: 300,
     temperature: 0.85,
   },
 });
+
+console.log(`[gemini] Using model: ${GEMINI_MODEL}`);
 
 /**
  * Call Gemini with a conversation history.

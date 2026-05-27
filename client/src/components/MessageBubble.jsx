@@ -1,5 +1,5 @@
 /**
- * MessageBubble — renders one message.
+ * MessageBubble — renders one message in Teams-style design.
  * AI messages are formatted as "**[Name]**: text".
  * Parses multiple members in one response (each on a new **[Name]** line).
  */
@@ -39,10 +39,30 @@ function parseAiMessage(content, memberMap) {
   return parts.length > 0 ? parts : [{ name: null, text: content }];
 }
 
+// Generate color from name for consistency
+function getColorFromName(name) {
+  const colors = [
+    '#0078d4', // Blue
+    '#107c10', // Green
+    '#e81123', // Red
+    '#ffb900', // Gold
+    '#8764b8', // Purple
+    '#00a4ef', // Cyan
+    '#f7630c', // Orange
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
+
 export default function MessageBubble({ msg, memberMap, prevMsg }) {
   const isSystem = msg.senderType === 'system';
   const isUser = msg.senderType === 'user';
   const isAI = msg.senderType === 'ai';
+  const isMentor = msg.senderType === 'mentor';
 
   const time = msg.timestamp
     ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -56,14 +76,15 @@ export default function MessageBubble({ msg, memberMap, prevMsg }) {
   if (isSystem) {
     return (
       <div style={{
-        textAlign: 'center', margin: '8px 0', padding: '6px 16px',
+        textAlign: 'center', margin: '12px 0', padding: '0px 16px',
         animation: 'fadeIn 0.3s both',
       }}>
         <span style={{
-          fontSize: '0.78rem', color: msg.isEmergency ? 'var(--brand-danger)' : 'var(--text-muted)',
-          background: msg.isEmergency ? 'rgba(239,68,68,0.08)' : 'var(--surface-hover)',
-          borderRadius: 20, padding: '4px 14px',
-          fontWeight: msg.isEmergency ? 600 : 400,
+          fontSize: '0.75rem', color: msg.isEmergency ? '#e81123' : '#808080',
+          background: msg.isEmergency ? 'rgba(232,17,35,0.08)' : '#f0f0f0',
+          borderRadius: 16, padding: '6px 12px',
+          fontWeight: msg.isEmergency ? 600 : 500,
+          display: 'inline-block',
         }}>
           {msg.content}
         </span>
@@ -71,29 +92,32 @@ export default function MessageBubble({ msg, memberMap, prevMsg }) {
     );
   }
 
-  // ── User message
+  // ── User message (right side, blue)
   if (isUser) {
     return (
       <div style={{
         display: 'flex', justifyContent: 'flex-end',
-        marginTop: sameSource ? 2 : 12,
+        marginTop: sameSource ? 4 : 12,
+        marginBottom: 0,
         animation: 'fadeIn 0.25s both',
+        paddingRight: 0,
       }}>
-        <div style={{ maxWidth: '70%' }}>
+        <div style={{ maxWidth: '60%' }}>
           <div style={{
-            background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+            background: '#0078d4',
             color: 'white',
-            borderRadius: '16px 16px 4px 16px',
-            padding: '10px 14px',
+            borderRadius: '8px',
+            padding: '8px 12px',
             fontSize: '0.9rem',
             lineHeight: 1.5,
-            boxShadow: '0 2px 8px rgba(99,102,241,0.3)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+            wordWrap: 'break-word',
           }}>
             {msg.content}
           </div>
           {!sameSource && (
-            <div style={{ textAlign: 'right', marginTop: 4, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              {msg.sender} · {time}
+            <div style={{ textAlign: 'right', marginTop: 4, fontSize: '0.7rem', color: '#808080' }}>
+              {time}
             </div>
           )}
         </div>
@@ -107,61 +131,152 @@ export default function MessageBubble({ msg, memberMap, prevMsg }) {
 
     return (
       <div style={{
-        marginTop: sameSource ? 2 : 16,
+        marginTop: sameSource ? 4 : 12,
+        marginBottom: 0,
         animation: 'fadeIn 0.3s both',
       }}>
         {parts.map((part, i) => {
-          const member = part.name ? memberMap[part.name] : null;
-          const color = member?.color || '#6366f1';
-          const avatar = member?.avatar || (part.name ? part.name.slice(0, 2).toUpperCase() : 'AI');
-
           if (!part.text) return null;
+
+          const member = part.name ? memberMap[part.name] : null;
+          const color = member?.color || getColorFromName(part.name || 'AI');
+          const initials = part.name 
+            ? part.name.split(' ').map(n => n[0]).join('').toUpperCase()
+            : 'AI';
 
           return (
             <div key={i} style={{
-              display: 'flex', gap: 12, alignItems: 'flex-start',
+              display: 'flex', gap: 8, alignItems: 'flex-start',
               maxWidth: '75%',
-              marginBottom: i < parts.length - 1 ? 10 : 0,
+              marginBottom: i < parts.length - 1 ? 8 : 0,
             }}>
-              {/* Avatar */}
-              <div className="avatar" style={{
-                background: color, color: 'white',
-                fontSize: '0.65rem', fontWeight: 700,
-                flexShrink: 0,
-                boxShadow: `0 0 12px ${color}50`,
-              }}>
-                {avatar}
-              </div>
-              <div>
-                {part.name && (
-                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color, marginBottom: 4 }}>
+              {/* Avatar - only show on first message from this person or if name changed */}
+              {(!sameSource || i > 0) && (
+                <div className="avatar" style={{
+                  background: color,
+                  color: 'white',
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  flexShrink: 0,
+                  width: '36px',
+                  height: '36px',
+                  minWidth: '36px',
+                  marginTop: part.name ? 0 : 0,
+                }}>
+                  {initials}
+                </div>
+              )}
+              
+              {/* Spacer when no avatar */}
+              {(sameSource && i === 0) && (
+                <div style={{ width: '36px', flexShrink: 0 }}></div>
+              )}
+
+              <div style={{ flex: 1 }}>
+                {/* Name and role header - only show on first message or if name changed */}
+                {part.name && (!sameSource || i > 0) && (
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
                     {part.name}
                     {member?.role && (
-                      <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: 6 }}>
+                      <span style={{ color: '#808080', fontWeight: 400, fontSize: '0.7rem' }}>
                         {member.role}
                       </span>
                     )}
-                    {i === 0 && (
-                      <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{time}</span>
-                    )}
                   </div>
                 )}
+                
+                {/* Message bubble */}
                 <div style={{
-                  background: 'var(--surface-card)',
-                  border: '1px solid var(--surface-border)',
-                  borderRadius: '4px 16px 16px 16px',
-                  padding: '10px 14px',
+                  background: '#f0f0f0',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
                   fontSize: '0.9rem',
-                  lineHeight: 1.6,
-                  color: 'var(--text-primary)',
-                  borderLeft: `3px solid ${color}`,
+                  lineHeight: 1.5,
+                  color: '#2d2d2d',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  wordWrap: 'break-word',
                 }}>
                   {part.text}
                 </div>
+
+                {/* Timestamp - only on first part of message */}
+                {i === 0 && !sameSource && (
+                  <div style={{ fontSize: '0.7rem', color: '#808080', marginTop: 4 }}>
+                    {time}
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
+      </div>
+    );
+  }
+
+  // ── Mentor message
+  if (isMentor) {
+    const mentorColor = '#0078d4';
+    const mentorInitials = msg.sender ? msg.sender.split(' ').map(n => n[0]).join('').toUpperCase() : 'TL';
+
+    return (
+      <div style={{
+        marginTop: sameSource ? 4 : 12,
+        marginBottom: 0,
+        animation: 'fadeIn 0.25s both',
+      }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', maxWidth: '75%' }}>
+          {/* Avatar - only show on first message */}
+          {!sameSource && (
+            <div className="avatar" style={{
+              background: mentorColor,
+              color: 'white',
+              fontSize: '0.65rem',
+              fontWeight: 600,
+              flexShrink: 0,
+              width: '36px',
+              height: '36px',
+              minWidth: '36px',
+            }}>
+              {mentorInitials}
+            </div>
+          )}
+
+          {/* Spacer when no avatar */}
+          {sameSource && (
+            <div style={{ width: '36px', flexShrink: 0 }}></div>
+          )}
+
+          <div style={{ flex: 1 }}>
+            {/* Name header - only on first message */}
+            {!sameSource && (
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: mentorColor, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {msg.sender || 'Mentor'}
+                <span style={{ color: '#808080', fontWeight: 400, fontSize: '0.7rem' }}>Coach</span>
+              </div>
+            )}
+
+            {/* Message bubble */}
+            <div style={{
+              background: '#eef6fc',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              fontSize: '0.9rem',
+              lineHeight: 1.5,
+              color: '#2d2d2d',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              wordWrap: 'break-word',
+            }}>
+              {msg.content}
+            </div>
+
+            {/* Timestamp - only on first message */}
+            {!sameSource && (
+              <div style={{ fontSize: '0.7rem', color: '#808080', marginTop: 4 }}>
+                {time}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   }

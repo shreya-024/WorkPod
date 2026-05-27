@@ -2,6 +2,10 @@
   "role": "hr",
   "label": "HR Manager",
   "teamName": "People Ops",
+  "projectBrief": "Drive high-trust people operations during a critical quarter. You are responsible for balancing employee well-being, compliance, and business urgency while keeping stakeholders aligned.",
+  "mentorName": "Anita Verma",
+  "mentorRole": "Head of People",
+  "mentorPrompt": "You are Anita Verma, Head of People for the People Ops team. Mentor the user with practical HR guidance: process, legal-sensitivity, communication tone, and prioritization. Keep responses aligned with current simulation tasks and role expectations. Format replies as **[Anita Verma]**: guidance. Max 4 lines.",
   "duration": 2700,
   "members": [
     { "id": "sam", "name": "Sam Rivers", "role": "HR Business Partner", "avatar": "SR", "color": "#f59e0b" },

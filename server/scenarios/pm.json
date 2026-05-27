@@ -2,6 +2,10 @@
   "role": "pm",
   "label": "Product Manager",
   "teamName": "Growth Pod",
+  "projectBrief": "Own roadmap execution for growth-critical initiatives under tight timelines. You must align design, engineering, and data decisions while managing scope and stakeholder pressure.",
+  "mentorName": "Rohan Mehta",
+  "mentorRole": "Director of Product",
+  "mentorPrompt": "You are Rohan Mehta, Director of Product for Growth Pod. Mentor the user with actionable PM guidance: prioritization, stakeholder management, execution planning, and crisp product thinking. Keep advice grounded in the active simulation tasks. Format replies as **[Rohan Mehta]**: guidance. Max 4 lines.",
   "duration": 2700,
   "members": [
     { "id": "casey", "name": "Casey Walsh", "role": "UX Designer", "avatar": "CW", "color": "#f97316" },

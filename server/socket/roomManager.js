@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { callGemini } from '../services/geminiService.js';
+import { callGemini, callMentorGemini } from '../services/geminiService.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -35,7 +35,9 @@ function getOrCreateRoom(role) {
     role,
     code,
     history: [],
+    mentorHistory: [],
     participants: [],
+    scenario,
     systemPrompt: scenario.systemPrompt,
     emergencyPrompt: scenario.emergencyPrompt,
     emergencyLabel: scenario.emergencyLabel,
@@ -94,7 +96,7 @@ export function initRoomManager(io) {
     });
 
     // ─── USER MESSAGE ─────────────────────────────────────────────
-    socket.on('user-message', async ({ content, userName }) => {
+    socket.on('user-message', async ({ content, userName, channel = 'team' }) => {
       if (!currentRoom) return;
       const room = currentRoom;
 
@@ -103,6 +105,7 @@ export function initRoomManager(io) {
         sender: userName || 'You',
         senderType: 'user',
         content,
+        channel,
         timestamp: new Date().toISOString(),
         socketId: socket.id,
       };
@@ -111,30 +114,47 @@ export function initRoomManager(io) {
       // Guard: don't pile up AI calls
       if (room.aiTyping) return;
       room.aiTyping = true;
-      io.to(room.code).emit('ai-typing', { typing: true });
+      io.to(room.code).emit('ai-typing', { typing: true, channel });
 
       try {
-        const aiText = await callGemini(
-          room.history,
-          content,
-          room.history.length === 0 ? room.systemPrompt : null,
-        );
+        const useMentor = channel === 'mentor';
+        const aiText = useMentor
+          ? await callMentorGemini(room.mentorHistory, content, room.scenario)
+          : await callGemini(
+              room.history,
+              content,
+              room.history.length === 0 ? room.systemPrompt : null,
+            );
 
-        // Push to shared history
-        room.history.push({ role: 'user', parts: [{ text: content }] });
-        room.history.push({ role: 'model', parts: [{ text: aiText }] });
-
-        // Trim to last 15 turns
-        if (room.history.length > 30) {
-          room.history = room.history.slice(room.history.length - 30);
+        if (useMentor) {
+          room.mentorHistory.push({ role: 'user', parts: [{ text: content }] });
+          room.mentorHistory.push({ role: 'model', parts: [{ text: aiText }] });
+          if (room.mentorHistory.length > 30) {
+            room.mentorHistory = room.mentorHistory.slice(room.mentorHistory.length - 30);
+          }
+        } else {
+          room.history.push({ role: 'user', parts: [{ text: content }] });
+          room.history.push({ role: 'model', parts: [{ text: aiText }] });
+          if (room.history.length > 30) {
+            room.history = room.history.slice(room.history.length - 30);
+          }
         }
 
-        const aiMsg = {
-          sender: 'AI',
-          senderType: 'ai',
-          content: aiText,
-          timestamp: new Date().toISOString(),
-        };
+        const aiMsg = useMentor
+          ? {
+              sender: room.scenario.mentorName || 'Mentor',
+              senderType: 'mentor',
+              content: aiText,
+              channel: 'mentor',
+              timestamp: new Date().toISOString(),
+            }
+          : {
+              sender: 'AI',
+              senderType: 'ai',
+              content: aiText,
+              channel: 'team',
+              timestamp: new Date().toISOString(),
+            };
         io.to(room.code).emit('new-message', aiMsg);
       } catch (err) {
         console.error('Gemini error:', err.message);
@@ -146,7 +166,7 @@ export function initRoomManager(io) {
         });
       } finally {
         room.aiTyping = false;
-        io.to(room.code).emit('ai-typing', { typing: false });
+        io.to(room.code).emit('ai-typing', { typing: false, channel });
       }
     });
 

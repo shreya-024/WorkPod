@@ -2,6 +2,9 @@
   "role": "sde",
   "label": "Software Engineer",
   "teamName": "Alpha Squad",
+  "projectBrief": "Build and stabilize core platform reliability for the upcoming enterprise launch. You are expected to collaborate cross-functionally, ship high-impact fixes, and communicate technical risks clearly.",
+  "mentorName": "Priya Nair",
+  "mentorRole": "Engineering Manager",
   "duration": 2700,
   "members": [
     { "id": "alex", "name": "Alex Chen", "role": "Senior SDE", "avatar": "AC", "color": "#6366f1" },

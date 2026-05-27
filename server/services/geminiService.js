@@ -44,6 +44,33 @@ export async function callGemini(history, userMessage, systemPrompt = null) {
   return text;
 }
 
+function buildMentorPrompt(scenario) {
+  const mentorName = scenario.mentorName || 'Team Lead';
+  const mentorRole = scenario.mentorRole || 'Mentor';
+  const tasks = (scenario.tasks || [])
+    .map((t) => `- ${t.title}${t.meta ? ` (${t.meta})` : ''}`)
+    .join('\n');
+
+  return scenario.mentorPrompt || `You are ${mentorName}, the ${mentorRole} for ${scenario.teamName} (${scenario.label} simulation).
+Your job is to guide the user when they ask doubts about project context, priorities, trade-offs, and next steps.
+Be practical, concise, and supportive.
+Always stay within this simulation context and tasks:
+${tasks}
+
+Response format:
+**[${mentorName}]**: <guidance>
+Max 4 lines.`;
+}
+
+/**
+ * Mentor chat channel for user doubts and clarifications.
+ * Keeps a separate history from teammate channel.
+ */
+export async function callMentorGemini(history, userMessage, scenario) {
+  const mentorSystemPrompt = buildMentorPrompt(scenario);
+  return callGemini(history, userMessage, history.length === 0 ? mentorSystemPrompt : null);
+}
+
 /**
  * Evaluate a session transcript and return a structured score JSON.
  */

@@ -2,6 +2,9 @@
   "role": "hr",
   "label": "HR Manager",
   "teamName": "People Ops",
+  "projectBrief": "Drive high-trust people operations during a critical quarter. You are responsible for balancing employee well-being, compliance, and business urgency while keeping stakeholders aligned.",
+  "mentorName": "Anita Verma",
+  "mentorRole": "Head of People",
   "duration": 2700,
   "members": [
     { "id": "sam", "name": "Sam Rivers", "role": "HR Business Partner", "avatar": "SR", "color": "#f59e0b" },

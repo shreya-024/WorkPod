@@ -26,6 +26,13 @@ export const useSimStore = create((set, get) => ({
     set({ user: null, token: null });
   },
 
+  // ── Theme ─────────────────────────────────────────────────
+  theme: localStorage.getItem('wpod_theme') || 'light', // 'light' | 'dark'
+  setTheme: (theme) => {
+    localStorage.setItem('wpod_theme', theme);
+    set({ theme });
+  },
+
   // ── Simulation ────────────────────────────────────────────
   role: null,           // 'sde' | 'hr' | 'pm'
   scenario: null,       // full scenario JSON

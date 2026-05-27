@@ -15,7 +15,6 @@ export function useSocket() {
     addMessage,
     setAiTyping,
     setEmergencyActive,
-    scenario,
   } = useSimStore();
 
   useEffect(() => {
@@ -70,9 +69,9 @@ export function useSocket() {
     };
   }, [role]);
 
-  const sendMessage = (content) => {
+  const sendMessage = (content, channel = 'team') => {
     const userName = user?.name || `Guest_${guestId.slice(-4)}`;
-    socketRef.current?.emit('user-message', { content, userName });
+    socketRef.current?.emit('user-message', { content, userName, channel });
   };
 
   const triggerEmergency = () => {

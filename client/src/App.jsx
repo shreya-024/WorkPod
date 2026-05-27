@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import LandingPage from './pages/LandingPage.jsx';
 import RoleSelectPage from './pages/RoleSelectPage.jsx';
 import SimulationPage from './pages/SimulationPage.jsx';
@@ -19,6 +20,12 @@ function ProtectedReport() {
 }
 
 export default function App() {
+  // Apply saved theme on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('wpod_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>

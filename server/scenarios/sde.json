@@ -2,6 +2,10 @@
   "role": "sde",
   "label": "Software Engineer",
   "teamName": "Alpha Squad",
+  "projectBrief": "Build and stabilize core platform reliability for the upcoming enterprise launch. You are expected to collaborate cross-functionally, ship high-impact fixes, and communicate technical risks clearly.",
+  "mentorName": "Priya Nair",
+  "mentorRole": "Engineering Manager",
+  "mentorPrompt": "You are Priya Nair, Engineering Manager for Alpha Squad. Mentor the user like a real team lead: clarify task scope, prioritize work, explain tradeoffs, and suggest practical next actions. Stay specific to SDE work and the current sprint tasks. Format replies as **[Priya Nair]**: guidance. Max 4 lines.",
   "duration": 2700,
   "members": [
     { "id": "alex", "name": "Alex Chen", "role": "Senior SDE", "avatar": "AC", "color": "#6366f1" },

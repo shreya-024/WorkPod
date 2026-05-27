@@ -15,8 +15,9 @@ export default function ChatWindow({ messages, scenario }) {
   return (
     <div style={{
       height: '100%', overflowY: 'auto',
-      padding: '20px 16px',
-      display: 'flex', flexDirection: 'column', gap: 4,
+      padding: '24px 40px',
+      display: 'flex', flexDirection: 'column', gap: 2,
+      background: '#ffffff',
     }}>
       {/* Welcome message */}
       {messages.length === 0 && (
@@ -26,10 +27,10 @@ export default function ChatWindow({ messages, scenario }) {
           textAlign: 'center', padding: 40,
         }}>
           <div style={{ fontSize: '3rem', marginBottom: 16 }}>👋</div>
-          <h3 className="font-display" style={{ fontWeight: 700, marginBottom: 8 }}>
+          <h3 className="font-display" style={{ fontWeight: 600, marginBottom: 8, fontSize: '1.5rem' }}>
             Welcome to {scenario?.teamName}
           </h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: 400, lineHeight: 1.6 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', maxWidth: 400, lineHeight: 1.6 }}>
             Say hello or jump straight into your tasks. Your AI teammates are ready to collaborate.
           </p>
           <div style={{ display: 'flex', gap: 8, marginTop: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -39,15 +40,15 @@ export default function ChatWindow({ messages, scenario }) {
               "Can someone give me an update?",
             ].map(s => (
               <span key={s} style={{
-                padding: '8px 14px',
-                background: 'var(--surface-card)',
-                border: '1px solid var(--surface-border)',
+                padding: '6px 12px',
+                background: '#f0f0f0',
+                border: '1px solid #ddd',
                 borderRadius: 20, fontSize: '0.8rem',
                 color: 'var(--text-secondary)', cursor: 'pointer',
-                transition: 'border-color 0.2s',
+                transition: 'all 0.2s',
               }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--brand-primary)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--surface-border)'}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#0078d4'; e.currentTarget.style.backgroundColor = '#eef6fc'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#ddd'; e.currentTarget.style.backgroundColor = '#f0f0f0'; }}
               >
                 "{s}"
               </span>

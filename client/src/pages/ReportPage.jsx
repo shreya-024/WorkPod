@@ -1,62 +1,129 @@
 import { useNavigate } from 'react-router-dom';
 import { useSimStore } from '../store/useSimStore.js';
 import { ROLES } from '../scenarios/index.js';
+import { useEffect, useRef, useState } from 'react';
+import Navbar from '../components/Navbar.jsx';
 
-function ScoreBar({ label, value, color = 'var(--brand-primary)' }) {
+// ── SVG Icons ──────────────────────────────────────────────────────
+const BookIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+  </svg>
+);
+const TargetIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+  </svg>
+);
+const ZapIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+  </svg>
+);
+const WarnIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+);
+const ExternalLinkIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+  </svg>
+);
+const MessageIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+const MapIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+    <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
+  </svg>
+);
+
+const ROADMAP_ICONS = [BookIcon, TargetIcon, ZapIcon];
+
+// ── Animated counter hook ──────────────────────────────────────────
+function useCountUp(target, duration = 1500) {
+  const [value, setValue] = useState(0);
+  const raf = useRef(null);
+  useEffect(() => {
+    const start = performance.now();
+    const tick = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(target * ease));
+      if (progress < 1) raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf.current);
+  }, [target, duration]);
+  return value;
+}
+
+// ── Score bar with animated fill ──────────────────────────────────
+function ScoreBar({ label, value, color }) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setWidth(value), 200);
+    return () => clearTimeout(t);
+  }, [value]);
+
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{label}</span>
-        <span style={{ fontWeight: 700, fontSize: '0.875rem', color }}>{value}/100</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{label}</span>
+        <span style={{ fontWeight: 700, fontSize: '0.9rem', color }}>{value}%</span>
       </div>
-      <div style={{ height: 8, background: 'var(--surface-hover)', borderRadius: 99, overflow: 'hidden' }}>
+      <div style={{ height: 8, background: 'var(--bg-tertiary)', borderRadius: 99, overflow: 'hidden' }}>
         <div style={{
-          width: `${value}%`, height: '100%',
-          background: color, borderRadius: 99,
+          height: '100%', borderRadius: 99,
+          background: color,
+          width: `${width}%`,
           transition: 'width 1.2s cubic-bezier(0.4,0,0.2,1)',
-          boxShadow: `0 0 8px ${color}80`,
+          boxShadow: `0 0 8px ${color}60`,
         }} />
       </div>
     </div>
   );
 }
 
+// ── Score gauge (semicircle SVG) ───────────────────────────────────
 function ScoreGauge({ score }) {
-  const angle = (score / 100) * 180;
-  const color = score >= 75 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+  const animated = useCountUp(score, 1400);
+  const color = score >= 75 ? 'var(--success)' : score >= 50 ? 'var(--warning)' : 'var(--danger)';
   const label = score >= 75 ? 'Excellent' : score >= 50 ? 'Good' : 'Needs Work';
 
-  // SVG semicircle gauge
   const r = 70;
   const cx = 90, cy = 90;
   const circumference = Math.PI * r;
   const dashOffset = circumference * (1 - score / 100);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <svg width="180" height="100" viewBox="0 0 180 100">
-        {/* Track */}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <svg width="180" height="104" viewBox="0 0 180 104">
         <path
           d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-          fill="none" stroke="var(--surface-hover)" strokeWidth="14" strokeLinecap="round"
+          fill="none" stroke="var(--bg-tertiary)" strokeWidth="14" strokeLinecap="round"
         />
-        {/* Fill */}
         <path
           d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
           fill="none" stroke={color} strokeWidth="14" strokeLinecap="round"
-          strokeDasharray={`${circumference}`}
+          strokeDasharray={circumference}
           strokeDashoffset={dashOffset}
           style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1)', filter: `drop-shadow(0 0 6px ${color})` }}
         />
-        {/* Score text */}
-        <text x={cx} y={cy - 8} textAnchor="middle" fill="white" fontSize="28" fontWeight="800" fontFamily="Space Grotesk">
-          {score}
+        <text x={cx} y={cy - 8} textAnchor="middle" fill="var(--text-primary)" fontSize="28" fontWeight="800" fontFamily="Syne, sans-serif">
+          {animated}
         </text>
-        <text x={cx} y={cy + 12} textAnchor="middle" fill={color} fontSize="11" fontWeight="600" fontFamily="Inter">
+        <text x={cx} y={cy + 14} textAnchor="middle" fill={color} fontSize="11" fontWeight="600" fontFamily="Inter, sans-serif">
           {label}
         </text>
       </svg>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: 4 }}>Overall Score</p>
+      <p style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem', marginTop: 0 }}>Overall Score</p>
     </div>
   );
 }
@@ -64,7 +131,6 @@ function ScoreGauge({ score }) {
 export default function ReportPage() {
   const navigate = useNavigate();
   const { report, reportSaved, role, scenario, resetSim } = useSimStore();
-
   const roleInfo = ROLES.find(r => r.id === role);
 
   const handlePlayAgain = () => {
@@ -74,91 +140,94 @@ export default function ReportPage() {
 
   if (!report) return null;
 
+  const subScoreColor = (v) => v >= 70 ? 'var(--success)' : v >= 45 ? 'var(--warning)' : 'var(--danger)';
+
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
-      {/* Bg */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 0,
-        background: 'radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.08) 0%, transparent 60%)',
-        pointerEvents: 'none',
-      }} />
-
-      {/* Nav */}
-      <nav style={{
-        position: 'relative', zIndex: 2,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '20px 48px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: 'linear-gradient(135deg, #6366f1, #ec4899)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
-          }}>✈</div>
-          <span className="font-display" style={{ fontSize: '1.1rem', fontWeight: 700 }}>WorkPod</span>
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary btn-sm" id="report-play-again-top" onClick={handlePlayAgain}>
-            Play Again
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+      <Navbar
+        showAuth={false}
+        rightContent={
+          <button className="btn btn-ghost btn-sm" id="report-play-again-top" onClick={handlePlayAgain}>
+            Try Another Role
           </button>
-        </div>
-      </nav>
+        }
+      />
 
-      <main style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px', position: 'relative', zIndex: 2 }}>
+      <main style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px 80px' }}>
         {/* Header */}
         <div className="animate-fadeIn" style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div className="badge badge-success" style={{ marginBottom: 16 }}>✅ Session Complete</div>
-          <h1 className="font-display" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 8 }}>
+          <div className="badge badge-success" style={{ marginBottom: 16 }}>
+            Session Complete
+          </div>
+          <h1 className="font-display" style={{
+            fontSize: 'clamp(1.8rem, 4vw, 2.6rem)',
+            fontWeight: 800, letterSpacing: '-0.03em',
+            color: 'var(--text-primary)', marginBottom: 10,
+          }}>
             Your Performance Report
           </h1>
           {role && (
             <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
-              {roleInfo?.icon} {roleInfo?.label} · {scenario?.teamName}
+              {roleInfo?.label} · {scenario?.teamName} · {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </p>
           )}
           {!reportSaved && (
-            <p style={{ color: 'var(--brand-warning)', fontSize: '0.8rem', marginTop: 8 }}>
-              ⚠️ Guest mode — this report won't be saved. Create an account to track your progress.
-            </p>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              marginTop: 12, padding: '8px 16px',
+              background: 'rgba(240,165,0,0.1)',
+              border: '1px solid rgba(240,165,0,0.25)',
+              borderRadius: 8, fontSize: '0.82rem', color: 'var(--warning)',
+            }}>
+              <WarnIcon />
+              Guest mode — this report will not be saved. Create an account to track progress.
+            </div>
           )}
         </div>
 
-        {/* Score section */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
-          {/* Gauge card */}
+        {/* Scores */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
           <div className="card animate-slideUp" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
             <ScoreGauge score={report.overallScore} />
           </div>
 
-          {/* Sub-scores */}
-          <div className="card animate-slideUp" style={{ animationDelay: '100ms' }}>
-            <h3 style={{ fontWeight: 600, marginBottom: 24, fontSize: '1rem' }}>Skill Breakdown</h3>
-            <ScoreBar label="Communication" value={report.communication} color="#6366f1" />
-            <ScoreBar label="Task Management" value={report.taskManagement} color="#10b981" />
-            <ScoreBar label="Pressure Handling" value={report.pressureHandling} color="#ec4899" />
+          <div className="card animate-slideUp" style={{ animationDelay: '80ms' }}>
+            <h3 className="font-display" style={{ fontWeight: 700, marginBottom: 24, fontSize: '1rem', color: 'var(--text-primary)' }}>
+              Skill Breakdown
+            </h3>
+            <ScoreBar label="Communication"    value={report.communication}    color={subScoreColor(report.communication)} />
+            <ScoreBar label="Task Management"  value={report.taskManagement}   color={subScoreColor(report.taskManagement)} />
+            <ScoreBar label="Pressure Handling" value={report.pressureHandling} color={subScoreColor(report.pressureHandling)} />
           </div>
         </div>
 
         {/* Feedback */}
         {report.feedback?.length > 0 && (
-          <div className="card animate-slideUp" style={{ marginBottom: 24, animationDelay: '200ms' }}>
-            <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-              💬 AI Feedback
+          <div className="card animate-slideUp" style={{ marginBottom: 20, animationDelay: '160ms' }}>
+            <h3 className="font-display" style={{
+              fontWeight: 700, fontSize: '1rem', marginBottom: 20,
+              display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)',
+            }}>
+              <span style={{ color: 'var(--accent)' }}><MessageIcon /></span>
+              AI Feedback
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {report.feedback.map((f, i) => (
                 <div key={i} style={{
-                  display: 'flex', gap: 12, alignItems: 'flex-start',
+                  display: 'flex', gap: 14, alignItems: 'flex-start',
                   padding: '14px 16px',
-                  background: 'var(--surface-raised)',
+                  background: 'var(--bg-tertiary)',
                   borderRadius: 10,
-                  borderLeft: '3px solid var(--brand-primary)',
+                  borderLeft: '3px solid var(--accent)',
                 }}>
-                  <span style={{ color: 'var(--brand-primary)', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>
-                    {i + 1}.
+                  <span style={{
+                    color: 'var(--accent)', fontWeight: 800,
+                    fontSize: '0.85rem', flexShrink: 0, marginTop: 1,
+                    fontFamily: 'var(--font-display)',
+                  }}>
+                    {String(i + 1).padStart(2, '0')}
                   </span>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>{f}</p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.7 }}>{f}</p>
                 </div>
               ))}
             </div>
@@ -167,61 +236,80 @@ export default function ReportPage() {
 
         {/* Roadmap */}
         {report.roadmap?.length > 0 && (
-          <div className="card animate-slideUp" style={{ marginBottom: 40, animationDelay: '300ms' }}>
-            <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-              🗺️ 30-Day Learning Roadmap
+          <div className="card animate-slideUp" style={{ marginBottom: 40, animationDelay: '240ms' }}>
+            <h3 className="font-display" style={{
+              fontWeight: 700, fontSize: '1rem', marginBottom: 20,
+              display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)',
+            }}>
+              <span style={{ color: 'var(--accent)' }}><MapIcon /></span>
+              30-Day Learning Roadmap
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-              {report.roadmap.map((item, i) => (
-                <a
-                  key={i}
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  id={`roadmap-item-${i}`}
-                  style={{
-                    display: 'block', padding: '18px 20px',
-                    background: 'var(--surface-raised)',
-                    borderRadius: 12,
-                    border: '1px solid var(--surface-border)',
-                    transition: 'all 0.2s',
-                    textDecoration: 'none',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--brand-primary)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--surface-border)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                >
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    background: 'rgba(99,102,241,0.15)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.2rem', marginBottom: 12,
-                  }}>
-                    {['📚', '🎯', '⚡'][i] || '📖'}
-                  </div>
-                  <h4 style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 6 }}>{item.title}</h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.5, marginBottom: 10 }}>
-                    {item.description}
-                  </p>
-                  {item.link && (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--brand-primary-light)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      Open resource →
-                    </span>
-                  )}
-                </a>
-              ))}
+              {report.roadmap.map((item, i) => {
+                const Icon = ROADMAP_ICONS[i % ROADMAP_ICONS.length];
+                return (
+                  <a
+                    key={i}
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    id={`roadmap-item-${i}`}
+                    style={{
+                      display: 'flex', flexDirection: 'column',
+                      padding: '18px 20px',
+                      background: 'var(--bg-tertiary)',
+                      borderRadius: 12,
+                      border: '1px solid var(--border)',
+                      transition: 'all 0.2s',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10,
+                      background: 'var(--accent-muted)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--accent)', marginBottom: 12,
+                    }}>
+                      <Icon />
+                    </div>
+                    <h4 className="font-display" style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: 6, color: 'var(--text-primary)' }}>
+                      {item.title}
+                    </h4>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', lineHeight: 1.55, marginBottom: 12, flex: 1 }}>
+                      {item.description}
+                    </p>
+                    {item.link && (
+                      <span style={{
+                        fontSize: '0.75rem', color: 'var(--accent)',
+                        display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600,
+                      }}>
+                        View Resource <ExternalLinkIcon />
+                      </span>
+                    )}
+                  </a>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* CTA */}
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', animation: 'fadeIn 0.5s 400ms both' }}>
-          <button className="btn btn-primary btn-lg" id="report-play-again-btn" onClick={handlePlayAgain} style={{ minWidth: 180 }}>
-            🚀 Play Again
+        {/* CTAs */}
+        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button className="btn btn-accent btn-lg" id="report-play-again-btn" onClick={handlePlayAgain} style={{ minWidth: 180 }}>
+            Try Another Role
           </button>
-          <button className="btn btn-secondary btn-lg" id="report-home-btn" onClick={() => navigate('/')} style={{ minWidth: 180 }}>
+          <button className="btn btn-ghost btn-lg" id="report-home-btn" onClick={() => navigate('/')} style={{ minWidth: 180 }}>
             Back to Home
           </button>
         </div>
+        {!reportSaved && (
+          <p style={{ textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.82rem', marginTop: 16 }}>
+            Sign in to save this report and track your progress over time
+          </p>
+        )}
       </main>
     </div>
   );

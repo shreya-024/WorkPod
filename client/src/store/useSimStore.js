@@ -27,7 +27,7 @@ export const useSimStore = create((set, get) => ({
   },
 
   // ── Theme ─────────────────────────────────────────────────
-  theme: localStorage.getItem('wpod_theme') || 'light', // 'light' | 'dark'
+  theme: localStorage.getItem('wpod_theme') || 'dark', // 'light' | 'dark'
   setTheme: (theme) => {
     localStorage.setItem('wpod_theme', theme);
     set({ theme });

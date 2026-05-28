@@ -7,13 +7,19 @@ const MessageSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
 }, { _id: false });
 
+const RoadmapItemSchema = new mongoose.Schema({
+  title: String,        // resource/skill name
+  url: String,          // real URL
+  reason: String,       // one line why this helps
+}, { _id: false });
+
 const ScoreSchema = new mongoose.Schema({
   overallScore: Number,
   communication: Number,
   taskManagement: Number,
   pressureHandling: Number,
   feedback: [String],
-  roadmap: [{ title: String, description: String, link: String }],
+  roadmap: [RoadmapItemSchema],
 }, { _id: false });
 
 const SessionSchema = new mongoose.Schema({

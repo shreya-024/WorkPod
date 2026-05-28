@@ -8,7 +8,6 @@ import { useSimStore } from './store/useSimStore.js';
 
 function ProtectedSim() {
   const role = useSimStore(s => s.role);
-  // roomCode is set asynchronously by socket after joining — don't guard on it
   if (!role) return <Navigate to="/select" replace />;
   return <SimulationPage />;
 }
@@ -20,20 +19,20 @@ function ProtectedReport() {
 }
 
 export default function App() {
-  // Apply saved theme on mount
+  // Apply saved theme on mount — default dark
   useEffect(() => {
-    const savedTheme = localStorage.getItem('wpod_theme') || 'light';
+    const savedTheme = localStorage.getItem('wpod_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/"       element={<LandingPage />} />
         <Route path="/select" element={<RoleSelectPage />} />
-        <Route path="/sim" element={<ProtectedSim />} />
+        <Route path="/sim"    element={<ProtectedSim />} />
         <Route path="/report" element={<ProtectedReport />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*"       element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

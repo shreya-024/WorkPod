@@ -6,10 +6,24 @@ import { useVoice } from '../hooks/useVoice.js';
 import ChatWindow from '../components/ChatWindow.jsx';
 import ChatSidebar from '../components/ChatSidebar.jsx';
 import TaskSidebar from '../components/TaskSidebar.jsx';
+import TaskArtifact from '../components/TaskArtifact.jsx';
 import EmergencyBanner from '../components/EmergencyBanner.jsx';
 import VoiceBtn from '../components/VoiceBtn.jsx';
 import TypingIndicator from '../components/TypingIndicator.jsx';
+import SimTopBar from '../components/SimTopBar.jsx';
 import api from '../lib/api.js';
+
+const SendIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
 
 export default function SimulationPage() {
   const navigate = useNavigate();
@@ -17,37 +31,36 @@ export default function SimulationPage() {
   const [ending, setEnding] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [showOfferLetter, setShowOfferLetter] = useState(true);
-  const [chatChannel, setChatChannel] = useState('team'); // 'team' | 'mentor'
+  const [chatChannel, setChatChannel] = useState('team');
+  const [selectedTask, setSelectedTask] = useState(null);
   const inputRef = useRef(null);
 
   const {
     role, scenario, roomCode, messages, aiTyping,
-    timerSeconds, startTimer, stopTimer, resetTimer,
+    timerSeconds, startTimer, stopTimer,
     isEmergencyActive, setEmergencyActive,
     completedTasks, user, guestId,
     setReport, setEndSessionFn,
     theme, setTheme,
+    roomParticipants,
   } = useSimStore();
 
-  // Apply theme to document root
+  // Sync theme to document
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
   const { sendMessage, triggerEmergency } = useSocket();
 
-  // Timer starts after offer letter is accepted
+  // Start timer after offer letter accepted
   useEffect(() => {
     if (!showOfferLetter) startTimer();
-    return () => {}; // timer persists in store
   }, [showOfferLetter, startTimer]);
 
-  // 60% = 1080 elapsed of 2700 → 1620 remaining
   const elapsed = 2700 - timerSeconds;
   const percentElapsed = Math.round((elapsed / 2700) * 100);
   const showEmergencyBtn = percentElapsed >= 60 && !isEmergencyActive;
 
-  // Auto-end when timer hits 0
   useEffect(() => {
     if (timerSeconds === 0) endSession('timeout');
   }, [timerSeconds]);
@@ -60,7 +73,7 @@ export default function SimulationPage() {
     const durationSeconds = 2700 - timerSeconds;
     const payload = {
       userId: user?.id || guestId,
-      guestId: guestId,
+      guestId,
       role,
       roomId: roomCode || 'solo',
       messages: messages.map(m => ({
@@ -80,7 +93,6 @@ export default function SimulationPage() {
       navigate('/report');
     } catch (err) {
       console.error('End session error:', err);
-      // Use fallback report
       setReport({
         overallScore: 55,
         communication: 55,
@@ -93,7 +105,6 @@ export default function SimulationPage() {
     }
   }, [ending, timerSeconds, messages, completedTasks, isEmergencyActive, role, roomCode, user, guestId]);
 
-  // Register end fn in store for auto-timeout
   useEffect(() => { setEndSessionFn(endSession); }, [endSession]);
 
   const handleSend = () => {
@@ -121,152 +132,116 @@ export default function SimulationPage() {
     triggerEmergency();
   };
 
+  const handleTaskSubmit = ({ role, taskId, content }) => {
+    const { toggleTask, addMessage } = useSimStore.getState();
+    toggleTask(taskId);
+    const preview = content.slice(0, 200).replace(/\n/g, ' ');
+    const autoMessage = `I've completed this task — here's my work: ${preview}...`;
+    sendMessage(autoMessage, 'team');
+    setSelectedTask(null);
+  };
+
   if (!scenario) return null;
 
-  // Format timer
-  const mins = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
-  const secs = String(timerSeconds % 60).padStart(2, '0');
-  const timerUrgent = timerSeconds < 300; // < 5 min
-
   return (
-    <div className="sim-layout" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      {/* ── TOP BAR ─────────────────────────────────────────── */}
-      <header className="sim-topbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: 6,
-              background: 'var(--gradient-brand)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14,
-            }}>✈</div>
-            <span className="font-display" style={{ fontWeight: 700, fontSize: '0.95rem' }}>WorkPod</span>
-          </div>
-          <div style={{ width: 1, height: 20, background: 'var(--surface-border)' }} />
-          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            {scenario.teamName} · <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{scenario.label}</span>
-          </span>
-          {roomCode && (
-            <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
-              #{roomCode.split('-').slice(-1)[0]}
-            </span>
-          )}
-        </div>
+    <div className="sim-layout">
+      {/* TOP BAR */}
+      <SimTopBar
+        scenario={scenario}
+        roomCode={roomCode}
+        roomParticipants={roomParticipants}
+        timerSeconds={timerSeconds}
+        onEndSession={() => setShowEndConfirm(true)}
+        onEmergency={handleEmergency}
+        showEmergencyBtn={showEmergencyBtn}
+      />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Emergency button */}
-          {showEmergencyBtn && (
-            <button
-              id="emergency-trigger-btn"
-              className="btn btn-danger btn-sm"
-              onClick={handleEmergency}
-              style={{ animation: 'pulse-ring 2s infinite' }}
-            >
-              🚨 Emergency
-            </button>
-          )}
-
-          {/* Timer */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: timerUrgent ? 'rgba(232,17,35,0.1)' : 'rgba(0,120,212,0.08)',
-            border: `1px solid ${timerUrgent ? 'rgba(232,17,35,0.3)' : 'var(--brand-primary)'}`,
-            borderRadius: 8, padding: '6px 14px',
-          }}>
-            <span style={{ fontSize: '0.75rem' }}>⏱</span>
-            <span style={{
-              fontFamily: 'monospace', fontWeight: 700, fontSize: '1rem',
-              color: timerUrgent ? 'var(--brand-danger)' : 'var(--brand-primary)',
-            }}>
-              {mins}:{secs}
-            </span>
-          </div>
-
-          {/* Theme toggle button */}
-          <button
-            id="theme-toggle-btn"
-            className="btn btn-icon"
-            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
-          >
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
-
-          {/* End session */}
-          <button
-            id="end-session-btn"
-            className="btn btn-sm"
-            onClick={() => setShowEndConfirm(true)}
-            style={{
-              background: 'var(--surface-card)',
-              border: '1px solid var(--brand-primary)',
-              color: 'var(--brand-primary)',
-              fontWeight: 600,
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'var(--brand-primary)';
-              e.currentTarget.style.color = 'white';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'var(--surface-card)';
-              e.currentTarget.style.color = 'var(--brand-primary)';
-            }}
-          >
-            End Session
-          </button>
-        </div>
-      </header>
-
-      {/* ── CONTENT AREA ────────────────────────────────────── */}
+      {/* CONTENT */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-        {/* Chat sidebar on the left */}
-        <ChatSidebar scenario={scenario} chatChannel={chatChannel} onChannelChange={setChatChannel} />
+        {/* Left: Channels + Team */}
+        <ChatSidebar
+          scenario={scenario}
+          chatChannel={chatChannel}
+          onChannelChange={setChatChannel}
+          onTaskClick={(id, title) => setSelectedTask({ id, title })}
+        />
 
-        {/* Task sidebar */}
+        {/* Right: task sidebar (fixed 240px) + main chat */}
         <aside className="sim-sidebar">
-          <TaskSidebar scenario={scenario} timerSeconds={timerSeconds} percentElapsed={percentElapsed} />
+          <TaskSidebar
+            scenario={scenario}
+            timerSeconds={timerSeconds}
+            percentElapsed={percentElapsed}
+            onTaskClick={(id, title) => setSelectedTask({ id, title })}
+          />
         </aside>
 
-        {/* Main chat area on the right */}
-        <main className="sim-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Emergency banner */}
+        {/* Main chat */}
+        <main className="sim-main">
           {isEmergencyActive && (
             <EmergencyBanner label={scenario.emergencyLabel} />
           )}
 
-          {/* Messages */}
-          <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-            <ChatWindow messages={messages} scenario={scenario} />
+          <div style={{
+            flex: 1, overflow: 'hidden', minHeight: 0,
+            display: 'flex', flexDirection: 'column',
+          }}>
+            {/* Chat header */}
+            <div style={{
+              padding: '12px 20px',
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--bg-secondary)',
+              display: 'flex', alignItems: 'center', gap: 8,
+              flexShrink: 0,
+            }}>
+              <span style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>#</span>
+              <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                {chatChannel === 'mentor' ? (scenario.mentorName || 'Team Lead') : 'team-general'}
+              </span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>
+                {scenario.members?.length} members
+              </span>
+            </div>
+
+            <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+              <ChatWindow messages={messages.filter(m =>
+                chatChannel === 'mentor'
+                  ? (m.senderType === 'mentor' || m.senderType === 'user' || m.senderType === 'system')
+                  : (m.senderType !== 'mentor' || m.senderType === 'system')
+              )} scenario={scenario} />
+            </div>
           </div>
 
           {/* Typing indicator */}
           {aiTyping && (
-            <div style={{ padding: '4px 20px' }}>
+            <div style={{ padding: '6px 20px', flexShrink: 0 }}>
               <TypingIndicator members={scenario.members} />
             </div>
           )}
 
-          {/* Input area */}
+          {/* Input */}
           <div style={{
             padding: '12px 16px 16px',
-            borderTop: '1px solid var(--surface-border)',
-            background: 'var(--surface-raised)',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--bg-secondary)',
+            flexShrink: 0,
           }}>
             <div style={{
               display: 'flex', gap: 10, alignItems: 'flex-end',
-              background: 'var(--surface-input)',
-              border: '1px solid var(--surface-border)',
+              background: 'var(--bg-primary)',
+              border: '1px solid var(--border)',
               borderRadius: 12,
               padding: '8px 12px',
-              transition: 'border-color 0.2s',
-            }}>
+              transition: 'border-color 0.2s, box-shadow 0.2s',
+            }}
+              onFocus={() => {}}
+            >
               <textarea
                 ref={inputRef}
                 id="chat-input"
                 placeholder={chatChannel === 'mentor'
-                  ? `Ask ${scenario.mentorName || 'Team Lead'} a doubt...`
-                  : `Message ${scenario.teamName}...`}
+                  ? `Ask ${scenario.mentorName || 'Team Lead'} a question...`
+                  : `Message # team-general...`}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -275,56 +250,94 @@ export default function SimulationPage() {
                   flex: 1, background: 'transparent', border: 'none', outline: 'none',
                   color: 'var(--text-primary)', fontFamily: 'var(--font-base)',
                   fontSize: '0.9rem', resize: 'none', lineHeight: 1.5,
-                  maxHeight: 120, overflowY: 'auto',
+                  maxHeight: '6rem', overflowY: 'auto',
                 }}
                 onInput={e => {
                   e.target.style.height = 'auto';
-                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 96) + 'px';
                 }}
               />
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
                 <VoiceBtn onResult={handleVoiceResult} />
                 <button
                   id="send-message-btn"
                   onClick={handleSend}
                   disabled={!input.trim() || aiTyping}
                   style={{
-                    width: 36, height: 36, borderRadius: 8, border: 'none',
-                    background: input.trim() && !aiTyping
-                      ? 'var(--brand-primary)'
-                      : 'var(--surface-hover)',
-                    color: input.trim() && !aiTyping ? 'white' : 'var(--text-muted)',
+                    width: 34, height: 34, borderRadius: 8, border: 'none',
+                    background: input.trim() && !aiTyping ? 'var(--accent)' : 'var(--bg-tertiary)',
+                    color: input.trim() && !aiTyping ? '#fff' : 'var(--text-tertiary)',
                     cursor: input.trim() && !aiTyping ? 'pointer' : 'not-allowed',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1rem', transition: 'all 0.2s', flexShrink: 0,
+                    transition: 'all 0.2s', flexShrink: 0,
                   }}
                 >
-                  ➤
+                  <SendIcon />
                 </button>
               </div>
             </div>
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 6, paddingLeft: 4 }}>
-              Enter to send · Shift+Enter for new line · Chrome voice input supported
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 6, paddingLeft: 4 }}>
+              Enter to send · Shift+Enter for newline · Chrome for voice
             </p>
           </div>
         </main>
       </div>
 
-      {/* ── END CONFIRM MODAL ───────────────────────────────── */}
+      {/* TASK ARTIFACT PANEL (right side panel) */}
+      {selectedTask && (
+        <div
+          className="overlay"
+          onClick={() => setSelectedTask(null)}
+          style={{ justifyContent: 'flex-end' }}
+        >
+          <div style={{
+            width: '50%', maxWidth: 700, height: '100%',
+            background: 'var(--bg-secondary)',
+            display: 'flex', flexDirection: 'column',
+            animation: 'slideRight 0.25s ease-out',
+            boxShadow: '-8px 0 32px rgba(0,0,0,0.3)',
+            position: 'relative',
+          }} onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setSelectedTask(null)}
+              style={{
+                position: 'absolute', top: 14, right: 14, zIndex: 10,
+                background: 'var(--bg-tertiary)', border: '1px solid var(--border)',
+                width: 30, height: 30, borderRadius: 6,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--text-secondary)',
+              }}
+              title="Close"
+            >
+              <CloseIcon />
+            </button>
+            <TaskArtifact
+              role={role}
+              taskId={selectedTask.id}
+              taskTitle={selectedTask.title}
+              onSubmit={handleTaskSubmit}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* END CONFIRM MODAL */}
       {showEndConfirm && (
         <div className="overlay" onClick={() => setShowEndConfirm(false)}>
-          <div className="card" style={{ maxWidth: 400, width: '100%', padding: 36, animation: 'slideUp 0.3s both' }}
+          <div className="card" style={{ maxWidth: 400, width: '100%', padding: 36, animation: 'slideUp 0.25s both' }}
             onClick={e => e.stopPropagation()}>
-            <h3 className="font-display" style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 8 }}>End simulation?</h3>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontSize: '0.9rem' }}>
+            <h3 className="font-display" style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 8 }}>
+              End simulation?
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontSize: '0.9rem', lineHeight: 1.6 }}>
               Your session will be evaluated by AI and you'll receive a detailed performance report.
-              {!user && ' (Not saved — you\'re in guest mode)'}
+              {!user && <span style={{ color: 'var(--warning)', display: 'block', marginTop: 8 }}>Not saved — you're in guest mode.</span>}
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowEndConfirm(false)}>
                 Keep going
               </button>
-              <button id="confirm-end-btn" className="btn btn-primary" style={{ flex: 1 }}
+              <button id="confirm-end-btn" className="btn btn-accent" style={{ flex: 1 }}
                 onClick={() => { setShowEndConfirm(false); endSession('manual'); }}
                 disabled={ending}>
                 {ending ? <span className="spinner" /> : 'Get Report'}
@@ -334,57 +347,59 @@ export default function SimulationPage() {
         </div>
       )}
 
-      {/* ── OFFER LETTER / PROJECT BRIEF ───────────────────── */}
+      {/* OFFER LETTER */}
       {showOfferLetter && (
         <div className="overlay">
-          <div className="card" style={{ maxWidth: 760, width: '100%', padding: 34 }}>
-            <p className="badge badge-primary" style={{ marginBottom: 12 }}>Offer Letter</p>
+          <div className="card" style={{ maxWidth: 720, width: '100%', padding: 36, maxHeight: '90vh', overflowY: 'auto' }}>
+            <span className="badge badge-primary" style={{ marginBottom: 14, display: 'inline-block' }}>Offer Letter</span>
             <h2 className="font-display" style={{ fontSize: '1.45rem', fontWeight: 700, marginBottom: 8 }}>
               Welcome to {scenario.teamName}
             </h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 18, fontSize: '0.9rem' }}>
-              You are joining as <strong>{scenario.label}</strong>. Review your project scope and deliverables before starting.
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontSize: '0.9rem', lineHeight: 1.6 }}>
+              You are joining as <strong style={{ color: 'var(--text-primary)' }}>{scenario.label}</strong>. Review your project scope and deliverables before starting.
             </p>
 
-            <div style={{ marginBottom: 16, padding: 14, border: '1px solid var(--surface-border)', borderRadius: 10 }}>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+            <div style={{ marginBottom: 16, padding: 16, border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-tertiary)' }}>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontWeight: 600 }}>
                 Project Brief
               </p>
-              <p style={{ fontSize: '0.92rem', lineHeight: 1.6 }}>
+              <p style={{ fontSize: '0.9rem', lineHeight: 1.7, color: 'var(--text-secondary)' }}>
                 {scenario.projectBrief || `You are part of ${scenario.teamName}. Complete sprint tasks, collaborate with teammates, and handle escalation scenarios under time pressure.`}
               </p>
             </div>
 
-            <div style={{ marginBottom: 18 }}>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, fontWeight: 600 }}>
                 Initial Deliverables
               </p>
-              <div style={{ display: 'grid', gap: 8 }}>
-                {scenario.tasks.map((t) => (
-                  <div key={t.id} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--surface-border)', background: 'var(--surface-hover)' }}>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{t.title}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{t.meta}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {scenario.tasks.map(t => (
+                  <div key={t.id} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)' }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>{t.title}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', marginTop: 3 }}>{t.meta}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 18 }}>
-              Need clarification anytime? Switch to <strong>Ask {scenario.mentorName || 'Team Lead'}</strong> in chat to ask doubts.
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 20, lineHeight: 1.6 }}>
+              Need clarification anytime? Switch to <strong style={{ color: 'var(--text-primary)' }}>
+                Ask {scenario.mentorName || 'Team Lead'}
+              </strong> in the sidebar to ask questions.
             </p>
 
-            <button className="btn btn-primary" onClick={() => setShowOfferLetter(false)} style={{ width: '100%' }}>
-              Accept Offer & Start Simulation
+            <button className="btn btn-accent" onClick={() => setShowOfferLetter(false)} style={{ width: '100%', padding: 14 }}>
+              Accept Offer &amp; Start Simulation
             </button>
           </div>
         </div>
       )}
 
-      {/* Loading overlay when ending */}
+      {/* LOADING OVERLAY */}
       {ending && (
         <div className="overlay" style={{ flexDirection: 'column', gap: 20 }}>
-          <div className="spinner" style={{ width: 48, height: 48, borderWidth: 3 }} />
-          <p className="font-display" style={{ fontSize: '1.1rem', fontWeight: 600 }}>
+          <div className="spinner" style={{ width: 44, height: 44, borderWidth: 3 }} />
+          <p className="font-display" style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
             Analyzing your performance...
           </p>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>

@@ -1,38 +1,44 @@
 export default function TypingIndicator({ members = [] }) {
-  // Pick a random-ish member to show as typing
   const member = members[Math.floor(Date.now() / 3000) % members.length];
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
       animation: 'fadeIn 0.2s both',
     }}>
       {member && (
-        <div className="avatar" style={{
-          background: member.color, color: 'white',
-          width: 28, height: 28, fontSize: '0.6rem',
+        <div style={{
+          width: 26, height: 26, borderRadius: '50%',
+          background: member.color || 'var(--accent)',
+          color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '0.58rem', fontWeight: 700, flexShrink: 0,
         }}>
-          {member.avatar}
+          {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
         </div>
       )}
+
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 5,
-        background: 'var(--surface-card)',
-        border: '1px solid var(--surface-border)',
-        borderRadius: '4px 14px 14px 14px',
-        padding: '10px 14px',
+        display: 'flex', alignItems: 'center', gap: 4,
+        background: 'var(--bg-tertiary)',
+        border: '1px solid var(--border)',
+        borderRadius: '0 10px 10px 10px',
+        padding: '9px 12px',
       }}>
         {[0, 1, 2].map(i => (
           <span key={i} style={{
-            width: 7, height: 7, borderRadius: '50%',
-            background: member?.color || 'var(--brand-primary)',
+            width: 6, height: 6, borderRadius: '50%',
+            background: member?.color || 'var(--accent)',
             display: 'inline-block',
             animation: `bounce-dots 1.4s ease-in-out ${i * 0.16}s infinite`,
           }} />
         ))}
       </div>
+
       {member && (
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
           {member.name} is typing...
         </span>
       )}

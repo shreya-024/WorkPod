@@ -63,10 +63,10 @@ export const endSession = async (req, res) => {
           communication: report.communication,
           taskManagement: report.taskManagement,
           pressureHandling: report.pressureHandling,
-          feedback: report.feedback,
-          roadmap: report.roadmap,
+          feedback: report.feedback || [],
+          roadmap: report.roadmap || [],
         },
-        report,
+        report, // Full report object stored for reference
       });
     }
 
@@ -77,15 +77,18 @@ export const endSession = async (req, res) => {
   }
 };
 
-// GET /api/session/history (logged-in users only)
+// GET /api/session/history/:userId (get past sessions for a user)
 export const getHistory = async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Auth required' });
-    const sessions = await Session.find({ userId: req.user._id })
-      .select('-messages')
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const sessions = await Session.find({ userId })
+      .select('-messages') // Exclude full message history to reduce payload
       .sort({ createdAt: -1 })
       .limit(20)
       .lean();
+    
     res.json({ sessions });
   } catch (err) {
     res.status(500).json({ error: err.message });

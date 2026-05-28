@@ -57,7 +57,7 @@ export function useSocket() {
       addMessage({
         sender: 'System',
         senderType: 'system',
-        content: `🚨 EMERGENCY ALERT: ${label}`,
+        content: `[ALERT] EMERGENCY: ${label}`,
         timestamp: new Date().toISOString(),
         isEmergency: true,
       });

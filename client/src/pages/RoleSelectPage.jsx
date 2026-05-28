@@ -3,6 +3,63 @@ import { useNavigate } from 'react-router-dom';
 import { useSimStore } from '../store/useSimStore.js';
 import { ROLES, getScenario } from '../scenarios/index.js';
 import api from '../lib/api.js';
+import Navbar from '../components/Navbar.jsx';
+
+const ROLE_META = {
+  sde: {
+    accent: 'var(--accent)',
+    difficulty: 'Intermediate',
+    tasks: [
+      'Review critical pull requests',
+      'Fix failing CI/CD pipeline',
+      'Debug production auth issue',
+      'Write unit tests (80% coverage)',
+    ],
+  },
+  hr: {
+    accent: '#2ecc8a',
+    difficulty: 'Beginner',
+    tasks: [
+      'Complete new hire onboarding',
+      'Conduct performance review',
+      'Handle employee complaint',
+      'Allocate L&D budget',
+    ],
+  },
+  pm: {
+    accent: '#f0a500',
+    difficulty: 'Intermediate',
+    tasks: [
+      'Write product spec for new feature',
+      'Align cross-functional stakeholders',
+      'Analyze beta metrics dashboard',
+      'Draft launch announcement',
+    ],
+  },
+};
+
+const CheckIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>
+);
+
+const LiveDot = () => (
+  <span style={{
+    width: 7, height: 7, borderRadius: '50%',
+    background: 'var(--success)',
+    display: 'inline-block',
+    boxShadow: '0 0 5px var(--success)',
+    animation: 'pulse 2s infinite',
+  }} />
+);
+
+const UsersIconSm = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+);
 
 export default function RoleSelectPage() {
   const navigate = useNavigate();
@@ -10,10 +67,8 @@ export default function RoleSelectPage() {
   const [counts, setCounts] = useState({ sde: 0, hr: 0, pm: 0 });
   const [selecting, setSelecting] = useState(null);
 
-  // Reset any previous sim on mount
   useEffect(() => { resetSim(); }, []);
 
-  // Poll live counts
   useEffect(() => {
     const fetchCounts = async () => {
       try {
@@ -34,191 +89,221 @@ export default function RoleSelectPage() {
     setSelecting(roleId);
     const scenario = getScenario(roleId);
     setRole(roleId, scenario);
-    // roomCode will be set by socket on join-room ack
     navigate('/sim');
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-      {/* Ambient bg */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 0,
-        background: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.1) 0%, transparent 60%)',
-        pointerEvents: 'none',
-      }} />
-
-      {/* Nav */}
-      <nav style={{
-        position: 'relative', zIndex: 2,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '20px 48px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-      }}>
-        <button onClick={() => navigate('/')} style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-primary)',
-        }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: 'linear-gradient(135deg, #6366f1, #ec4899)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
-          }}>✈</div>
-          <span className="font-display" style={{ fontSize: '1.1rem', fontWeight: 700 }}>WorkPod</span>
-        </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {user ? (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
+      <Navbar
+        showAuth={false}
+        rightContent={
+          user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div className="avatar" style={{ background: 'var(--brand-primary)', color: 'white', width: 32, height: 32, fontSize: '0.7rem' }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: '50%',
+                background: 'var(--accent)', color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.65rem', fontWeight: 700,
+              }}>
                 {user.name?.slice(0, 2).toUpperCase()}
               </div>
               <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{user.name}</span>
             </div>
           ) : (
-            <span className="badge badge-primary">👤 Guest Mode</span>
-          )}
-        </div>
-      </nav>
+            <span className="badge badge-primary">Guest</span>
+          )
+        }
+      />
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', position: 'relative', zIndex: 2 }}>
+      <main style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', padding: '64px 48px',
+        maxWidth: 1100, margin: '0 auto', width: '100%',
+      }}>
+        {/* Header */}
         <div className="animate-fadeIn" style={{ textAlign: 'center', marginBottom: 56 }}>
-          <h1 className="font-display" style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12 }}>
-            Choose your role
+          <h1 className="font-display" style={{
+            fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)',
+            fontWeight: 800, letterSpacing: '-0.03em',
+            color: 'var(--text-primary)', marginBottom: 12,
+          }}>
+            What role do you want to simulate today?
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
-            45-minute simulation · AI teammates · Real emergency scenarios
+            You'll be placed in a realistic workplace with AI teammates for 45 minutes
           </p>
         </div>
 
+        {/* Role Cards */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: 24,
-          width: '100%',
-          maxWidth: 1000,
+          gap: 24, width: '100%',
         }}>
           {ROLES.map((role, i) => {
             const scenario = getScenario(role.id);
+            const meta = ROLE_META[role.id] || {};
             const isLoading = selecting === role.id;
+            const liveCount = counts[role.id] || 0;
+
             return (
-              <button
+              <RoleCard
                 key={role.id}
-                id={`role-card-${role.id}`}
-                onClick={() => handleSelect(role.id)}
+                role={role}
+                scenario={scenario}
+                meta={meta}
+                liveCount={liveCount}
+                isLoading={isLoading}
                 disabled={!!selecting}
-                style={{
-                  background: 'var(--surface-card)',
-                  border: '1px solid var(--surface-border)',
-                  borderRadius: 20,
-                  padding: '32px 28px',
-                  cursor: selecting ? 'wait' : 'pointer',
-                  textAlign: 'left',
-                  transition: 'all 0.25s ease',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  animation: `slideUp 0.5s ${i * 100}ms both`,
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.border = `1px solid ${role.color}`;
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = `0 12px 40px ${role.color}30`;
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.border = '1px solid var(--surface-border)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                {/* Top accent bar */}
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-                  background: role.gradient, opacity: 0.8,
-                }} />
-
-                {/* Icon */}
-                <div style={{
-                  width: 56, height: 56, borderRadius: 16,
-                  background: `${role.color}20`,
-                  border: `1px solid ${role.color}40`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.8rem', marginBottom: 20,
-                }}>
-                  {role.icon}
-                </div>
-
-                <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <h2 className="font-display" style={{ fontSize: '1.2rem', fontWeight: 700 }}>{role.label}</h2>
-                  {counts[role.id] > 0 && (
-                    <span style={{
-                      display: 'flex', alignItems: 'center', gap: 5,
-                      fontSize: '0.75rem', color: 'var(--brand-accent)',
-                      background: 'rgba(16,185,129,0.1)', padding: '3px 10px',
-                      borderRadius: 20,
-                    }}>
-                      <span style={{ width: 6, height: 6, background: 'var(--brand-accent)', borderRadius: '50%', display: 'inline-block' }} />
-                      {counts[role.id]} live
-                    </span>
-                  )}
-                </div>
-
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: 24 }}>
-                  {role.description}
-                </p>
-
-                {/* Team members */}
-                <div style={{ marginBottom: 20 }}>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    AI Teammates
-                  </p>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {scenario?.members.map(m => (
-                      <div key={m.id} title={`${m.name} — ${m.role}`} style={{
-                        width: 32, height: 32, borderRadius: '50%',
-                        background: m.color, color: 'white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '0.65rem', fontWeight: 700,
-                        border: '2px solid var(--surface-card)',
-                      }}>
-                        {m.avatar}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Tasks preview */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {scenario?.tasks.slice(0, 2).map(t => (
-                    <div key={t.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      fontSize: '0.8rem', color: 'var(--text-muted)',
-                    }}>
-                      <span style={{ width: 14, height: 14, borderRadius: 4, border: '1px solid var(--surface-border)', flexShrink: 0 }} />
-                      {t.title}
-                    </div>
-                  ))}
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>+2 more tasks...</div>
-                </div>
-
-                {/* CTA */}
-                <div style={{
-                  marginTop: 28,
-                  background: role.gradient,
-                  color: 'white',
-                  borderRadius: 10,
-                  padding: '12px 20px',
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                }}>
-                  {isLoading ? <span className="spinner" style={{ width: 16, height: 16 }} /> : <>Join Simulation →</>}
-                </div>
-              </button>
+                delay={i * 80}
+                onSelect={() => handleSelect(role.id)}
+              />
             );
           })}
         </div>
+
+        {/* Guest notice */}
+        {!user && (
+          <div style={{
+            marginTop: 48, padding: '14px 24px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontSize: '0.85rem', color: 'var(--text-secondary)',
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" strokeWidth="2" strokeLinecap="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Playing as guest — sign in to save your report
+          </div>
+        )}
       </main>
     </div>
+  );
+}
+
+function RoleCard({ role, scenario, meta, liveCount, isLoading, disabled, delay, onSelect }) {
+  const [hovered, setHovered] = useState(false);
+  const accent = meta.accent || 'var(--accent)';
+
+  return (
+    <button
+      id={`role-card-${role.id}`}
+      onClick={onSelect}
+      disabled={disabled}
+      style={{
+        background: 'var(--bg-card)',
+        border: `1px solid ${hovered ? `${accent}40` : 'var(--border)'}`,
+        borderRadius: 16,
+        padding: '28px 24px',
+        cursor: disabled ? 'wait' : 'pointer',
+        textAlign: 'left',
+        transition: 'all 0.2s ease',
+        position: 'relative',
+        overflow: 'hidden',
+        animation: `slideUp 0.5s ${delay}ms both`,
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        boxShadow: hovered ? `0 20px 40px rgba(0,0,0,0.3)` : 'var(--shadow-sm)',
+        display: 'flex', flexDirection: 'column',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Top accent bar */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+        background: accent,
+      }} />
+
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div>
+          <h2 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3 }}>
+            {role.label}
+          </h2>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+            {scenario?.teamName || role.description?.split('.')[0]}
+          </div>
+        </div>
+        {liveCount > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            fontSize: '0.72rem', color: 'var(--success)',
+            background: 'rgba(46,204,138,0.1)',
+            padding: '3px 10px', borderRadius: 20, flexShrink: 0,
+          }}>
+            <LiveDot />
+            {liveCount} live
+          </div>
+        )}
+      </div>
+
+      {/* Task bullets */}
+      <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+        {(meta.tasks || []).map(t => (
+          <li key={t} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+            <span style={{ color: accent, marginTop: 1, flexShrink: 0 }}><CheckIcon /></span>
+            {t}
+          </li>
+        ))}
+      </ul>
+
+      {/* Team avatars */}
+      {scenario?.members && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: -4 }}>
+            {scenario.members.slice(0, 4).map(m => (
+              <div key={m.id} title={`${m.name} — ${m.role}`} style={{
+                width: 28, height: 28, borderRadius: '50%',
+                background: m.color, color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.6rem', fontWeight: 700,
+                border: '2px solid var(--bg-card)',
+                marginLeft: -6,
+              }}>
+                {m.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              </div>
+            ))}
+          </div>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <UsersIconSm /> {scenario.members.length} AI teammates
+          </span>
+        </div>
+      )}
+
+      {/* Difficulty */}
+      <div style={{ marginBottom: 20 }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center',
+          fontSize: '0.72rem', fontWeight: 600,
+          color: accent, background: `${accent}12`,
+          padding: '3px 10px', borderRadius: 20,
+        }}>
+          {meta.difficulty || 'Intermediate'}
+        </span>
+      </div>
+
+      {/* CTA */}
+      <div style={{
+        marginTop: 'auto',
+        background: accent,
+        color: '#fff',
+        borderRadius: 8,
+        padding: '11px 16px',
+        fontSize: '0.88rem',
+        fontWeight: 600,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+      }}>
+        {isLoading
+          ? <span className="spinner" style={{ width: 16, height: 16, borderTopColor: '#fff' }} />
+          : <>Start this role <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg></>
+        }
+      </div>
+    </button>
   );
 }

@@ -23,7 +23,7 @@ const CheckCircleIcon = () => (
   </svg>
 );
 
-export default function TeamSelectionModal({ onSelect, role, availableHumans = [], loadingHumans = false }) {
+export default function TeamSelectionModal({ onSelect, onCancel, role, availableHumans = [], loadingHumans = false }) {
   const [selected, setSelected] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const { teamComposition } = useSimStore();
@@ -226,8 +226,7 @@ export default function TeamSelectionModal({ onSelect, role, availableHumans = [
         }}>
           <button
             onClick={() => {
-              setSelected(null);
-              setShowDetails(false);
+              if (onCancel) onCancel();
             }}
             disabled={teamComposition !== null}
             style={{

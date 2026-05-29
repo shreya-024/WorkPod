@@ -6,7 +6,7 @@ An AI-powered workplace simulation platform. Practice real job scenarios with AI
 
 ## Features
 
-- **3 Roles** — Software Engineer, HR Manager, Product Manager
+- **5 Roles** — Software Engineer, HR Manager, Product Manager, SDE Intern, ML Intern
 - **AI Teammates** — Gemini-powered personas that stay fully in character
 - **Multiplayer** — join a room with real humans + AI, or go solo with all AI
 - **Collaborative Whiteboard** — Excalidraw-based real-time synchronized canvas for visual collaboration
@@ -19,6 +19,7 @@ An AI-powered workplace simulation platform. Practice real job scenarios with AI
 - **AI Performance Report** — evaluated on Communication, Task Management & Pressure Handling
 - **30-Day Learning Roadmap** — personalized, high-quality resource links generated after each session
 - **Guest + Auth** — play instantly as a guest, or sign in to save simulation history
+- **Premium SaaS UI** — Sleek dark theme, animated gradient typography, and glowing hover states across the application
 
 ---
 
@@ -167,7 +168,9 @@ WorkPod/
 │       └── scenarios/
 │           ├── sde.json
 │           ├── hr.json
-│           └── pm.json
+│           ├── pm.json
+│           ├── ml_intern.json
+│           └── sde_intern.json
 │
 └── server/                    # Express + Socket.io backend
     ├── index.js               # App entry, CORS, routes, socket init, and Jitsi room links

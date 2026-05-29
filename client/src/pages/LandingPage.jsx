@@ -216,7 +216,7 @@ export default function LandingPage() {
             animation: 'fadeIn 0.5s 240ms both',
           }}>
             {[
-              { Icon: BuildingIcon, label: '3 Roles Available' },
+              { Icon: BuildingIcon, label: '5 Roles Available' },
               { Icon: BrainIcon,    label: 'AI-Powered Feedback' },
               { Icon: UsersIcon,    label: 'Real Workplace Scenarios' },
             ].map(({ Icon, label }) => (

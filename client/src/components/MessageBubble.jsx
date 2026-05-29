@@ -247,7 +247,7 @@ export default function MessageBubble({ msg, memberMap, prevMsg }) {
               color: 'var(--text-primary)',
               wordWrap: 'break-word',
             }}>
-              {msg.content}
+              <MarkdownRenderer content={msg.content} />
             </div>
           </div>
         </div>

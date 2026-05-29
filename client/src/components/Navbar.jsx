@@ -33,6 +33,7 @@ export default function Navbar({ onSignIn, onGetStarted, showAuth = true, rightC
           padding: 0,
         }}
       >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{
           fontFamily: 'var(--font-display)',
           fontWeight: 800,
@@ -42,6 +43,18 @@ export default function Navbar({ onSignIn, onGetStarted, showAuth = true, rightC
         }}>
           Work<span style={{ color: 'var(--accent)' }}>Pod</span>
         </span>
+        <span style={{
+          fontSize: '0.85rem',
+          fontWeight: 700,
+          color: 'var(--accent)',
+          opacity: 0.8,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          marginTop: 2,
+        }}>
+          @ Jalebi
+        </span>
+      </div>
       </button>
 
       {/* Right side */}

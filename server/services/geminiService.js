@@ -17,25 +17,120 @@ ADDITIONAL MENTOR RULES: You are a career coach and direct manager, not a genera
 Only answer questions about career growth, role-specific skills, and work within this simulation.
 If the user asks anything unrelated to their career or current role, respond: "That's outside what I coach on — let's focus on your growth here."`;
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
+// ─── API Key Manager ─────────────────────────────────────────────────────────
+// Reads keys from GEMINI_KEY_1..GEMINI_KEY_6 (mixed casing variants), falls
+// back to the single GEMINI_KEY env var. Round-robins on each request and
+// auto-retries with the next key on 429 / quota errors.
 
-// Chat model: short replies, 300 tokens is enough for 3-line persona responses
-const model = genAI.getGenerativeModel({
-  model: GEMINI_MODEL,
-  generationConfig: {
-    maxOutputTokens: 300,
-    temperature: 0.85,
-  },
-});
+class KeyManager {
+  constructor() {
+    /** @type {string[]} */
+    this.keys = [];
 
-// Evaluator model: needs more tokens to output the full JSON report (feedback + roadmap)
-const evaluatorModel = genAI.getGenerativeModel({
-  model: GEMINI_MODEL,
-  generationConfig: {
-    maxOutputTokens: 1500,
-    temperature: 0.4,
-  },
-});
+    // Collect keys from the env var naming variants specified in the requirements
+    const envNames = [
+      'GEMINI_KEY_1',
+      'GEMINI_KEY_2',
+      'GEMINI_KEY_3',
+      'gemini_key_4',
+      'geminikey5',
+      'gemini_key_6',
+    ];
+
+    for (const name of envNames) {
+      const val = process.env[name];
+      if (val && val.trim()) {
+        this.keys.push(val.trim());
+      }
+    }
+
+    // Fallback to single GEMINI_KEY if no numbered keys found
+    if (this.keys.length === 0) {
+      const fallback = process.env.GEMINI_KEY;
+      if (fallback && fallback.trim()) {
+        this.keys.push(fallback.trim());
+      }
+    }
+
+    if (this.keys.length === 0) {
+      console.error('[gemini] ⚠️  No Gemini API keys found in environment!');
+    } else {
+      console.log(`[gemini] Loaded ${this.keys.length} API key(s)`);
+    }
+
+    /** @type {number} Round-robin index */
+    this._index = 0;
+  }
+
+  /** Get the next key via round-robin. */
+  nextKey() {
+    if (this.keys.length === 0) {
+      throw new Error('No Gemini API keys configured');
+    }
+    const key = this.keys[this._index % this.keys.length];
+    this._index = (this._index + 1) % this.keys.length;
+    return key;
+  }
+
+  /** Get a GoogleGenerativeAI client initialized with the current round-robin key. */
+  getClient() {
+    return new GoogleGenerativeAI(this.nextKey());
+  }
+
+  /** Total number of available keys. */
+  get count() {
+    return this.keys.length;
+  }
+}
+
+const keyManager = new KeyManager();
+
+/**
+ * Returns a GoogleGenerativeAI client initialized with the current key.
+ * Each call advances the round-robin index.
+ */
+export function getGeminiClient() {
+  return keyManager.getClient();
+}
+
+/**
+ * Helper: detect whether an error is a 429 / quota-exceeded error.
+ */
+function isQuotaError(err) {
+  if (!err) return false;
+  const status = err.status || err.httpStatusCode || err?.errorDetails?.[0]?.httpStatusCode;
+  if (status === 429) return true;
+  const msg = (err.message || '').toLowerCase();
+  return msg.includes('quota') || msg.includes('rate limit') || msg.includes('resource exhausted');
+}
+
+/**
+ * Execute a Gemini call with automatic key rotation on 429 / quota errors.
+ * Tries each available key once before throwing.
+ *
+ * @param {(client: GoogleGenerativeAI) => Promise<any>} fn
+ * @returns {Promise<any>}
+ */
+async function withKeyRotation(fn) {
+  const maxAttempts = keyManager.count;
+  let lastError;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const client = keyManager.getClient();
+    try {
+      return await fn(client);
+    } catch (err) {
+      lastError = err;
+      if (isQuotaError(err) && attempt < maxAttempts - 1) {
+        console.warn(`[gemini] Key #${((keyManager._index - 1 + keyManager.count) % keyManager.count) + 1} hit quota limit, rotating to next key…`);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastError;
+}
 
 console.log(`[gemini] Using model: ${GEMINI_MODEL}`);
 
@@ -64,10 +159,18 @@ export async function callGemini(history, userMessage, systemPrompt = null) {
     firstUserText = `${fullPrompt}\n\n---\n\n${userMessage}`;
   }
 
-  const chat = model.startChat({ history: trimmedHistory });
-  const result = await chat.sendMessage(firstUserText);
-  const text = result.response.text();
-  return text;
+  return withKeyRotation(async (client) => {
+    const model = client.getGenerativeModel({
+      model: GEMINI_MODEL,
+      generationConfig: {
+        maxOutputTokens: 300,
+        temperature: 0.85,
+      },
+    });
+    const chat = model.startChat({ history: trimmedHistory });
+    const result = await chat.sendMessage(firstUserText);
+    return result.response.text();
+  });
 }
 
 /**
@@ -142,15 +245,25 @@ Return this exact JSON structure with ONLY these fields (no extra text, no markd
   ]
 }`;
 
-  const result = await evaluatorModel.generateContent(prompt);
-  const raw = result.response.text().trim();
+  return withKeyRotation(async (client) => {
+    const evaluatorModel = client.getGenerativeModel({
+      model: GEMINI_MODEL,
+      generationConfig: {
+        maxOutputTokens: 1500,
+        temperature: 0.4,
+      },
+    });
 
-  // Robustly extract the outermost JSON object, regardless of surrounding text or fences
-  const jsonStart = raw.indexOf('{');
-  const jsonEnd = raw.lastIndexOf('}');
-  if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-    throw new Error(`No JSON object found in Gemini response: ${raw.slice(0, 200)}`);
-  }
-  const cleaned = raw.slice(jsonStart, jsonEnd + 1);
-  return JSON.parse(cleaned);
+    const result = await evaluatorModel.generateContent(prompt);
+    const raw = result.response.text().trim();
+
+    // Robustly extract the outermost JSON object, regardless of surrounding text or fences
+    const jsonStart = raw.indexOf('{');
+    const jsonEnd = raw.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+      throw new Error(`No JSON object found in Gemini response: ${raw.slice(0, 200)}`);
+    }
+    const cleaned = raw.slice(jsonStart, jsonEnd + 1);
+    return JSON.parse(cleaned);
+  });
 }

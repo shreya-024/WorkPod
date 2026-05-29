@@ -461,6 +461,246 @@ Include: What, Why, When, Call-to-Action`}
 
   return null;
 }
+// ─── ML Intern Panels ─────────────────────────────────────────────
+function MLInternPanel({ taskId }) {
+  if (taskId === 't1') {
+    return (
+      <div style={{ flex: 1, background: 'var(--bg-secondary)', overflow: 'auto', padding: '24px' }}>
+        <PanelLabel>Dataset Exploration Notes</PanelLabel>
+        <div style={{
+          background: 'var(--bg-primary)', padding: '14px 16px', borderRadius: 8,
+          marginBottom: 16, fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65,
+          border: '1px solid var(--border)',
+        }}>
+          Use the editor on the right to write your exploration notes. Cover:
+          <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+            <li>Dataset shape (rows × columns)</li>
+            <li>Column dtypes and descriptions</li>
+            <li>Missing value counts per column</li>
+            <li>Key statistical distributions (mean, median, std for numeric cols)</li>
+            <li>Observations about survival rates across groups</li>
+          </ul>
+        </div>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          The dataset is available here: 
+          <a href="/datasets/titanic_sample.csv" download="titanic_sample.csv" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download titanic_sample.csv
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (taskId === 't2') {
+    return (
+      <div style={{ flex: 1, background: 'var(--bg-secondary)', overflow: 'auto', padding: '24px' }}>
+        <PanelLabel>Titanic Dataset — Column Reference</PanelLabel>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{
+            width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem',
+            border: '1px solid var(--border)',
+          }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-tertiary)' }}>
+                <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)' }}>Column</th>
+                <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)' }}>Type</th>
+                <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)' }}>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ['PassengerId', 'int', 'Unique passenger ID'],
+                ['Survived', 'int (0/1)', 'Target — did they survive?'],
+                ['Pclass', 'int (1-3)', 'Ticket class (1st/2nd/3rd)'],
+                ['Name', 'string', 'Passenger name'],
+                ['Sex', 'string', 'male / female'],
+                ['Age', 'float', 'Age in years (has nulls!)'],
+                ['SibSp', 'int', '# siblings/spouses aboard'],
+                ['Parch', 'int', '# parents/children aboard'],
+                ['Fare', 'float', 'Passenger fare'],
+                ['Cabin', 'string', 'Cabin number (mostly null)'],
+                ['Embarked', 'char', 'Port: C/Q/S'],
+              ].map(([col, type, desc], idx) => (
+                <tr key={idx}>
+                  <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '0.8rem' }}>{col}</td>
+                  <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{type}</td>
+                  <td style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  if (taskId === 't3') {
+    return (
+      <div style={{ flex: 1, background: 'var(--bg-secondary)', overflow: 'auto', padding: '24px' }}>
+        <PanelLabel>Pipeline Requirements</PanelLabel>
+        <div style={{
+          background: 'var(--bg-primary)', padding: '14px 16px', borderRadius: 8,
+          fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65,
+          border: '1px solid var(--border)',
+        }}>
+          Build a preprocessing + training pipeline. Your code should:
+          <ol style={{ marginTop: 8, paddingLeft: 20 }}>
+            <li>Load the Titanic CSV</li>
+            <li>Handle missing values (Age, Cabin, Embarked)</li>
+            <li>Encode categorical features (Sex, Embarked)</li>
+            <li>Split into train/test sets</li>
+            <li>Train a classifier (LogisticRegression, RandomForest, etc.)</li>
+            <li>Print accuracy, precision, recall, and F1 score</li>
+          </ol>
+          <div style={{ marginTop: 12, color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
+            ⚠️ Watch out for data leakage — fit transformers on train set only!
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (taskId === 't4') {
+    return (
+      <div style={{ flex: 1, background: 'var(--bg-secondary)', overflow: 'auto', padding: '24px' }}>
+        <PanelLabel>Submission — Model Summary or Predictions</PanelLabel>
+        <div style={{
+          background: 'var(--bg-primary)', padding: '14px 16px', borderRadius: 8,
+          fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65,
+          border: '1px solid var(--border)',
+        }}>
+          Submit one of the following in the editor:
+          <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+            <li><strong>Option A:</strong> A trained model summary — include algorithm used, hyperparameters, accuracy, precision, recall, F1, and a brief confusion matrix</li>
+            <li><strong>Option B:</strong> A predictions CSV with columns: <code>PassengerId, Predicted_Survived</code></li>
+          </ul>
+          <div style={{ marginTop: 12, color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
+            Use the template pre-filled in the editor. Replace the TODO sections with your results.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ─── SDE Intern Panels ────────────────────────────────────────────
+function SDEInternPanel({ taskId }) {
+  if (taskId === 't1') {
+    return (
+      <div style={{ flex: 1, background: 'var(--bg-secondary)', overflow: 'auto', padding: '24px' }}>
+        <PanelLabel>Onboarding Wiki</PanelLabel>
+        <div style={{
+          background: 'var(--bg-primary)', padding: '14px 16px', borderRadius: 8,
+          fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65,
+          border: '1px solid var(--border)',
+        }}>
+          Your Engineering Manager shared the onboarding wiki in chat. Review it and submit a brief summary of what you learned.
+          <div style={{ marginTop: 12, fontWeight: 500, color: 'var(--text-primary)' }}>Key topics to cover:</div>
+          <ul style={{ marginTop: 4, paddingLeft: 20 }}>
+            <li>Repository structure and folder layout</li>
+            <li>Local dev setup steps</li>
+            <li>Team norms (standup, PR process, branching)</li>
+            <li>How to pick and claim tickets</li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  if (taskId === 't2') {
+    return (
+      <div style={{
+        flex: 1,
+        background: 'var(--bg-secondary)',
+        overflow: 'auto',
+        borderRight: '1px solid var(--border)',
+        padding: '16px',
+        fontFamily: 'monospace',
+        fontSize: '0.85rem',
+        color: 'var(--text-secondary)',
+      }}>
+        <PanelLabel>🐛 Issue #247 — Buggy Login Handler</PanelLabel>
+        <div style={{
+          background: '#1a1a1a', padding: '12px', borderRadius: 6, marginBottom: 12,
+          fontSize: '0.78rem', color: '#ff6b6b', fontWeight: 600,
+        }}>
+          P0 Security Bug — Fix both issues in the editor →
+        </div>
+        <pre style={{ margin: 0, lineHeight: 1.6, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+{`Bugs to fix:
+1. Missing password hash comparison
+   → Add bcrypt.compare(password, user.passwordHash)
+   → Return 401 if mismatch
+
+2. No rate limiting
+   → Track failed attempts per IP/email
+   → Block after 5 failures (15 min cooldown)
+
+The buggy code is pre-loaded in the editor.
+Fix it, then move to Task 3 (write tests).`}
+        </pre>
+      </div>
+    );
+  }
+
+  if (taskId === 't3') {
+    return (
+      <div style={{
+        flex: 1,
+        background: '#1a1a1a',
+        overflow: 'auto',
+        borderRight: '1px solid var(--border)',
+        padding: '16px',
+        fontFamily: 'monospace',
+        fontSize: '0.85rem',
+        color: '#ff6b6b',
+      }}>
+        <div style={{ color: '#ffd93d', marginBottom: 8, fontWeight: 600 }}>FAIL  tests/auth.test.ts</div>
+        <pre style={{ margin: 0, lineHeight: 1.6, color: '#ff6b6b', fontSize: '0.8rem' }}>
+{`  [FAIL] should reject login with wrong password (0ms)
+  [FAIL] should block after 5 failed attempts (0ms)
+  [FAIL] should return token for valid credentials (0ms)
+
+Test Suites: 1 failed, 0 passed, 1 total
+Tests:       3 failed, 0 passed, 3 total
+Time:        0.000s
+
+Write tests that prove the bugs were fixed.
+A scaffold is pre-loaded in the editor →`}
+        </pre>
+      </div>
+    );
+  }
+
+  if (taskId === 't4') {
+    return (
+      <div style={{ flex: 1, background: 'var(--bg-secondary)', overflow: 'auto', padding: '24px' }}>
+        <PanelLabel>PR Description Template</PanelLabel>
+        <div style={{
+          background: 'var(--bg-primary)', padding: '14px 16px', borderRadius: 8,
+          fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65,
+          border: '1px solid var(--border)',
+        }}>
+          Submit a PR description that covers:
+          <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+            <li><strong>What:</strong> What did you change and why?</li>
+            <li><strong>Why:</strong> What bug or issue does this fix?</li>
+            <li><strong>How to test:</strong> Steps to verify the fix works</li>
+            <li><strong>Screenshots / logs:</strong> (if applicable)</li>
+          </ul>
+          <div style={{ marginTop: 12, color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
+            A template is pre-filled in the editor. Fill in the sections.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
 
 // ─── Shared artifact header ────────────────────────────────────────
 function ArtifactHeader({ taskTitle, onSubmit, submitting }) {
@@ -485,6 +725,18 @@ function ArtifactHeader({ taskTitle, onSubmit, submitting }) {
       </button>
     </div>
   );
+}
+
+// ─── Editor language helper ─────────────────────────────────────────
+function getEditorLanguage(role, taskId) {
+  if (role === 'ml_intern') return 'python';
+  if (role === 'sde_intern') {
+    if (taskId === 't2') return 'typescript';
+    if (taskId === 't3') return 'typescript';
+    if (taskId === 't4') return 'markdown';
+    return 'markdown';
+  }
+  return 'javascript';
 }
 
 // ─── Main TaskArtifact Component ────────────────────────────────────
@@ -522,7 +774,82 @@ export default function TaskArtifact({ role, taskId, taskTitle, onSubmit }) {
     );
   }
 
-  // SDE role
+  // ML Intern role — always shows problem panel + Python editor
+  if (role === 'ml_intern') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-secondary)' }}>
+        <ArtifactHeader taskTitle={taskTitle} onSubmit={handleSubmit} submitting={submitting} />
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          <MLInternPanel taskId={taskId} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <div style={{
+              fontSize: '0.72rem', color: 'var(--text-tertiary)',
+              padding: '6px 12px',
+              background: 'var(--bg-tertiary)',
+              borderBottom: '1px solid var(--border)',
+              textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600,
+            }}>
+              {taskId === 't4' ? 'Submission Editor' : 'Python Editor'}
+            </div>
+            <Editor
+              height="100%"
+              defaultLanguage="python"
+              theme={theme === 'dark' ? 'vs-dark' : 'light'}
+              value={code}
+              onChange={(val) => setCode(val || '')}
+              options={{
+                minimap: { enabled: false },
+                wordWrap: 'on',
+                scrollBeyondLastLine: false,
+                fontSize: 13,
+                lineNumbers: 'on',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SDE Intern role — always shows problem panel + code editor
+  if (role === 'sde_intern') {
+    const lang = getEditorLanguage(role, taskId);
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-secondary)' }}>
+        <ArtifactHeader taskTitle={taskTitle} onSubmit={handleSubmit} submitting={submitting} />
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          <SDEInternPanel taskId={taskId} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <div style={{
+              fontSize: '0.72rem', color: 'var(--text-tertiary)',
+              padding: '6px 12px',
+              background: 'var(--bg-tertiary)',
+              borderBottom: '1px solid var(--border)',
+              textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600,
+            }}>
+              {taskId === 't4' ? 'PR Description' : 'Code Editor'}
+            </div>
+            <Editor
+              height="100%"
+              defaultLanguage={lang}
+              theme={theme === 'dark' ? 'vs-dark' : 'light'}
+              value={code}
+              onChange={(val) => setCode(val || '')}
+              options={{
+                minimap: { enabled: false },
+                wordWrap: 'on',
+                scrollBeyondLastLine: false,
+                fontSize: 13,
+                lineNumbers: 'on',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SDE role (original)
   const problemPanel = <SDEProblemPanel taskId={taskId} />;
 
   if (!problemPanel) {
@@ -608,5 +935,38 @@ describe('Payment Module', () => {
 });`;
     }
   }
+
+  // ── ML Intern pre-filled content ──────────────────────────────
+  if (role === 'ml_intern') {
+    if (taskId === 't1') {
+      return `# Dataset Exploration Notes\n\n## Dataset Overview\n- **Shape**: TODO rows × TODO columns\n- **Source**: /datasets/titanic_sample.csv\n\n## Column Summary\n| Column | Type | Missing | Notes |\n|--------|------|---------|-------|\n| PassengerId | int | 0 | |\n| Survived | int | 0 | Target variable |\n| Pclass | int | 0 | |\n| Sex | str | 0 | |\n| Age | float | TODO | |\n| Fare | float | 0 | |\n| Cabin | str | TODO | |\n| Embarked | str | TODO | |\n\n## Key Observations\n- TODO: Survival rate by gender\n- TODO: Survival rate by class\n- TODO: Age distribution\n- TODO: Fare distribution\n`;
+    }
+    if (taskId === 't2') {
+      return `# Detailed Dataset Exploration\n\n# TODO: Write your detailed exploration here\n# Describe patterns, correlations, and interesting findings\n`;
+    }
+    if (taskId === 't3') {
+      return `import pandas as pd\nimport numpy as np\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import LabelEncoder, StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import accuracy_score, classification_report, confusion_matrix\n\n# ─── 1. Load Data ────────────────────────────────────────────────\ndf = pd.read_csv('/datasets/titanic_sample.csv')\nprint(f"Shape: {df.shape}")\nprint(df.info())\nprint(df.describe())\n\n# ─── 2. Preprocessing ───────────────────────────────────────────\n# TODO: Handle missing values\n# - Age: fill with median? mean? group-based imputation?\n# - Cabin: drop column or extract deck letter?\n# - Embarked: fill with mode?\n\n# TODO: Encode categorical features\n# - Sex: LabelEncoder or pd.get_dummies?\n# - Embarked: one-hot encode?\n\n# TODO: Feature engineering (optional)\n# - FamilySize = SibSp + Parch + 1\n# - IsAlone = 1 if FamilySize == 1\n# - Title extraction from Name\n\n# TODO: Select features for modeling\n# features = ['Pclass', 'Sex', 'Age', 'Fare', 'Embarked', ...]\n\n# ─── 3. Train/Test Split ────────────────────────────────────────\n# TODO: Split data (80/20 or 70/30)\n# X_train, X_test, y_train, y_test = train_test_split(...)\n\n# ─── 4. Train Model ─────────────────────────────────────────────\n# TODO: Initialize and fit a classifier\n# model = LogisticRegression()  # or RandomForestClassifier()\n# model.fit(X_train, y_train)\n\n# ─── 5. Evaluate ─────────────────────────────────────────────────\n# TODO: Print metrics\n# y_pred = model.predict(X_test)\n# print(f"Accuracy: {accuracy_score(y_test, y_pred):.4f}")\n# print(classification_report(y_test, y_pred))\n# print(confusion_matrix(y_test, y_pred))\n`;
+    }
+    if (taskId === 't4') {
+      return `# Model Submission\n\n## Algorithm\n- **Model**: TODO (e.g., RandomForestClassifier)\n- **Hyperparameters**: TODO\n\n## Results\n- **Accuracy**: TODO\n- **Precision**: TODO\n- **Recall**: TODO\n- **F1 Score**: TODO\n\n## Classification Report\n\`\`\`\n              precision    recall  f1-score   support\n\n           0       TODO      TODO      TODO      TODO\n           1       TODO      TODO      TODO      TODO\n\n    accuracy                           TODO      TODO\n   macro avg       TODO      TODO      TODO      TODO\nweighted avg       TODO      TODO      TODO      TODO\n\`\`\`\n\n## Confusion Matrix\n\`\`\`\n[[TODO, TODO],\n [TODO, TODO]]\n\`\`\`\n\n## Key Decisions\n- TODO: Why did you choose this algorithm?\n- TODO: How did you handle missing values?\n- TODO: What features had the most impact?\n\n---\n\n## OR: Predictions CSV\n\`\`\`csv\nPassengerId,Predicted_Survived\n1,0\n2,1\n...\n\`\`\`\n`;
+    }
+  }
+
+  // ── SDE Intern pre-filled content ─────────────────────────────
+  if (role === 'sde_intern') {
+    if (taskId === 't1') {
+      return `// Onboarding notes — summarize what you learned from the wiki\n// After reviewing, submit to mark Task 1 as complete.\n`;
+    }
+    if (taskId === 't2') {
+      return `import { Request, Response } from 'express';\nimport jwt from 'jsonwebtoken';\nimport bcrypt from 'bcrypt';\nimport { findUserByEmail } from '../services/userService';\n\n// In-memory rate limiter (replace with Redis in production)\nconst failedAttempts: Map<string, { count: number; blockedUntil: number }> = new Map();\nconst MAX_ATTEMPTS = 5;\nconst BLOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes\n\nexport async function loginHandler(req: Request, res: Response) {\n  const { email, password } = req.body;\n\n  if (!email || !password) {\n    return res.status(400).json({ error: 'Email and password required' });\n  }\n\n  // TODO: Fix Bug #1 — Add rate limiting check here\n  // Check if this email/IP has exceeded MAX_ATTEMPTS\n  // If blocked, return 429 with a "Too many attempts" message\n\n  const user = await findUserByEmail(email);\n  if (!user) {\n    return res.status(401).json({ error: 'Invalid credentials' });\n  }\n\n  // TODO: Fix Bug #2 — Add password hash verification here\n  // Use bcrypt.compare(password, user.passwordHash)\n  // If password doesn't match, increment failed attempts and return 401\n\n  // Reset failed attempts on successful login\n  failedAttempts.delete(email);\n\n  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {\n    expiresIn: '24h',\n  });\n\n  return res.json({ token, user: { id: user.id, email: user.email } });\n}\n`;
+    }
+    if (taskId === 't3') {
+      return `import { describe, it, expect, jest, beforeEach } from '@jest/globals';\nimport { loginHandler } from '../api/auth/login';\nimport bcrypt from 'bcrypt';\n\n// Mock dependencies\njest.mock('../services/userService', () => ({\n  findUserByEmail: jest.fn(),\n}));\n\nconst { findUserByEmail } = require('../services/userService');\n\nfunction mockReqRes(body: any) {\n  const req = { body } as any;\n  const res = {\n    status: jest.fn().mockReturnThis(),\n    json: jest.fn().mockReturnThis(),\n  } as any;\n  return { req, res };\n}\n\ndescribe('loginHandler', () => {\n  beforeEach(() => {\n    jest.clearAllMocks();\n  });\n\n  it('should return 401 when password is wrong', async () => {\n    // TODO: Setup mock user with a known passwordHash\n    // TODO: Call loginHandler with wrong password\n    // TODO: Assert res.status(401) was called\n    // TODO: Assert res.json({ error: 'Invalid credentials' })\n  });\n\n  it('should return token for valid credentials', async () => {\n    // TODO: Setup mock user\n    // TODO: Hash a known password with bcrypt\n    // TODO: Call loginHandler with correct password\n    // TODO: Assert res.json was called with { token, user }\n  });\n\n  it('should block after 5 failed attempts', async () => {\n    // TODO: Setup mock user\n    // TODO: Make 5 failed login attempts\n    // TODO: Assert 6th attempt returns 429\n    // TODO: Assert response includes rate limit message\n  });\n});\n`;
+    }
+    if (taskId === 't4') {
+      return `## Pull Request: Fix login authentication bypass (Issue #247)\n\n### What\nTODO: Describe what you changed in the loginHandler\n\n### Why\nTODO: Explain the security vulnerability — what could an attacker do?\n\n### Changes\n- [ ] Added bcrypt password hash verification\n- [ ] Implemented rate limiting on failed login attempts\n- [ ] Added unit tests proving both bugs are fixed\n\n### How to Test\n1. TODO: Steps to verify password check works\n2. TODO: Steps to verify rate limiting works\n3. Run \`npm test -- tests/auth.test.ts\`\n\n### Risk Assessment\n- **Breaking changes**: None / TODO\n- **Rollback plan**: TODO\n\n### Checklist\n- [ ] Tests pass locally\n- [ ] No console errors\n- [ ] Reviewed by at least 1 teammate\n`;
+    }
+  }
+
   return '';
 }

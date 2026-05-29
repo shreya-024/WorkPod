@@ -39,9 +39,23 @@ const QUICK_STARTERS = [
 
 export default function ChatWindow({ messages, scenario, onQuickSend }) {
   const bottomRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const isNearBottomRef = useRef(true);
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    // Check if within 100px of bottom
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+  };
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const lastMsg = messages[messages.length - 1];
+    const isUserMsg = lastMsg?.senderType === 'user';
+    // Only auto-scroll if user is near bottom or user just sent a message
+    if (isNearBottomRef.current || isUserMsg) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   const memberMap = {};
@@ -51,7 +65,10 @@ export default function ChatWindow({ messages, scenario, onQuickSend }) {
   const hasUserMessage = messages.some(m => m.senderType === 'user');
 
   return (
-    <div style={{
+    <div 
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+      style={{
       height: '100%',
       overflowY: 'auto',
       padding: '20px 24px',

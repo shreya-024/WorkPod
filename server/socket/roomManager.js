@@ -90,7 +90,7 @@ export function initRoomManager(io) {
 
     // ─── JOIN ROOM ──────────────────────────────────────────────────────────
     socket.on('join-room', ({ role, userId, userName, teamType }) => {
-      if (!['sde', 'hr', 'pm'].includes(role)) return;
+      if (!['sde', 'hr', 'pm', 'ml_intern', 'sde_intern'].includes(role)) return;
 
       const room = getOrCreateRoom(role, teamType);
       currentRoom = room;
@@ -128,6 +128,81 @@ export function initRoomManager(io) {
       };
       logMessage(room, joinMsg);
       io.to(room.code).emit('system-message', joinMsg);
+
+      // ─── INTERN AUTO-MESSAGES ──────────────────────────────────────────────
+      // For intern roles, AI teammates proactively share onboarding material
+      // after a short delay, with typing indicators for realism.
+      if (role === 'ml_intern') {
+        // t+2s: Senior ML Engineer sends onboarding docs + dataset column table
+        setTimeout(() => {
+          io.to(room.code).emit('ai-typing', { typing: true, channel: 'team' });
+          setTimeout(() => {
+            const onboardingMsg = {
+              sender: 'AI',
+              senderType: 'ai',
+              content: `**[Shreya]**: Welcome to Jalebi ML! 🎉 Here's your onboarding packet. Our team norms: we track every experiment in MLflow, models go through staging → canary → prod via our model registry, and we do weekly model review meetings on Fridays.\n\nHere's the Titanic dataset you'll be working with — it's at \`/datasets/titanic_sample.csv\`. Column reference:\n\n| Column | Type | Description |\n|---|---|---|\n| PassengerId | int | Unique passenger ID |\n| Survived | int (0/1) | Target variable — did they survive? |\n| Pclass | int (1-3) | Ticket class (1=1st, 2=2nd, 3=3rd) |\n| Name | string | Passenger name |\n| Sex | string | male / female |\n| Age | float | Age in years (has missing values!) |\n| SibSp | int | # siblings/spouses aboard |\n| Parch | int | # parents/children aboard |\n| Ticket | string | Ticket number |\n| Fare | float | Passenger fare |\n| Cabin | string | Cabin number (mostly missing) |\n| Embarked | char | Port of embarkation (C/Q/S) |\n\nStart with Task 1 — explore the data and note your findings. Then move on to building a pipeline.`,
+              channel: 'team',
+              timestamp: new Date().toISOString(),
+            };
+            logMessage(room, onboardingMsg);
+            io.to(room.code).emit('new-message', onboardingMsg);
+            io.to(room.code).emit('ai-typing', { typing: false, channel: 'team' });
+          }, 1500);
+        }, 2000);
+
+        // t+5s: Data Scientist sends first 10 rows of data
+        setTimeout(() => {
+          io.to(room.code).emit('ai-typing', { typing: true, channel: 'team' });
+          setTimeout(() => {
+            const dataMsg = {
+              sender: 'AI',
+              senderType: 'ai',
+              content: `**[Alex]**: Here's a quick peek at the first 10 rows so you can get oriented before diving into the full dataset:\n\n\`\`\`csv\nPassengerId,Survived,Pclass,Name,Sex,Age,SibSp,Parch,Ticket,Fare,Cabin,Embarked\n1,0,3,"Braund, Mr. Owen Harris",male,22,1,0,A/5 21171,7.25,,S\n2,1,1,"Cumings, Mrs. John Bradley",female,38,1,0,PC 17599,71.28,C85,C\n3,1,3,"Heikkinen, Miss. Laina",female,26,0,0,STON/O2. 3101282,7.92,,S\n4,1,1,"Futrelle, Mrs. Jacques Heath",female,35,1,0,113803,53.1,C123,S\n5,0,3,"Allen, Mr. William Henry",male,35,0,0,373450,8.05,,S\n6,0,3,"Moran, Mr. James",male,,0,0,330877,8.46,,Q\n7,0,1,"McCarthy, Mr. Timothy J",male,54,0,0,17463,51.86,E46,S\n8,0,3,"Palsson, Master. Gosta Leonard",male,2,3,1,349909,21.07,,S\n9,1,3,"Johnson, Mrs. Oscar W",female,27,0,2,347742,11.13,,S\n10,1,2,"Nasser, Mrs. Nicholas",female,14,1,0,237736,30.07,,C\n\`\`\`\n\nNotice rows 6 has a missing Age value — that's going to be important for your preprocessing step. What do you see when you look at the data distributions?`,
+              channel: 'team',
+              timestamp: new Date().toISOString(),
+            };
+            logMessage(room, dataMsg);
+            io.to(room.code).emit('new-message', dataMsg);
+            io.to(room.code).emit('ai-typing', { typing: false, channel: 'team' });
+          }, 1500);
+        }, 5000);
+      }
+
+      if (role === 'sde_intern') {
+        // t+2s: Engineering Manager sends onboarding wiki
+        setTimeout(() => {
+          io.to(room.code).emit('ai-typing', { typing: true, channel: 'team' });
+          setTimeout(() => {
+            const wikiMsg = {
+              sender: 'AI',
+              senderType: 'ai',
+              content: `**[Dipshikha]**: Welcome to the team! 🎉 Here's our onboarding wiki — please read through before picking up your first ticket.\n\n**📁 Repo Structure**\n\`\`\`\n/src\n  /api        → Express route handlers\n  /middleware → Auth, rate-limiting, logging\n  /services   → Business logic layer\n  /models     → Mongoose/Prisma schemas\n  /utils      → Shared helpers\n/tests        → Jest test suites\n\`\`\`\n\n**🔧 Local Dev Setup**: \`npm install\` → copy \`.env.example\` to \`.env\` → \`npm run dev\` (port 3000)\n\n**📋 Team Norms**\n• Daily standup at 10am — async in #standup-bot (what you did, what you'll do, blockers)\n• All PRs need 1 approval before merge\n• Write tests for any bug fix — prove it was broken, prove it's fixed\n• Branch naming: \`fix/JIRA-123-short-description\` or \`feat/JIRA-456-feature-name\`\n\n**🎫 How to Pick Tickets**: Check the "Ready for Dev" column in Jira. Assign yourself, move to "In Progress", and post in #team-general.`,
+              channel: 'team',
+              timestamp: new Date().toISOString(),
+            };
+            logMessage(room, wikiMsg);
+            io.to(room.code).emit('new-message', wikiMsg);
+            io.to(room.code).emit('ai-typing', { typing: false, channel: 'team' });
+          }, 1500);
+        }, 2000);
+
+        // t+5s: Senior SDE sends a GitHub issue with buggy code
+        setTimeout(() => {
+          io.to(room.code).emit('ai-typing', { typing: true, channel: 'team' });
+          setTimeout(() => {
+            const issueMsg = {
+              sender: 'AI',
+              senderType: 'ai',
+              content: `**[Jordan]**: Hey! I've assigned you your first bug. Here's the GitHub issue:\n\n**🐛 Issue #247: Login endpoint allows authentication without password verification**\n**Priority:** P0 — Security\n**Reporter:** Security audit bot\n\n**Description:** The \`/api/auth/login\` endpoint returns a valid JWT even when the password is wrong. The password hash comparison was accidentally removed in a recent refactor. Also missing: rate limiting on failed attempts.\n\n**Buggy code** (\`auth/login.ts\`):\n\`\`\`typescript\nimport { Request, Response } from 'express';\nimport jwt from 'jsonwebtoken';\nimport { findUserByEmail } from '../services/userService';\n\nexport async function loginHandler(req: Request, res: Response) {\n  const { email, password } = req.body;\n\n  if (!email || !password) {\n    return res.status(400).json({ error: 'Email and password required' });\n  }\n\n  const user = await findUserByEmail(email);\n  if (!user) {\n    return res.status(401).json({ error: 'Invalid credentials' });\n  }\n\n  // BUG: Missing password hash check!\n  // Should compare password against user.passwordHash using bcrypt\n\n  // BUG: No rate limiting on failed login attempts\n  // Should track attempts and block after 5 failures\n\n  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {\n    expiresIn: '24h',\n  });\n\n  return res.json({ token, user: { id: user.id, email: user.email } });\n}\n\`\`\`\n\nFix both bugs, then write a unit test and submit a PR description. Open Task 2 in the sidebar to start editing!`,
+              channel: 'team',
+              timestamp: new Date().toISOString(),
+            };
+            logMessage(room, issueMsg);
+            io.to(room.code).emit('new-message', issueMsg);
+            io.to(room.code).emit('ai-typing', { typing: false, channel: 'team' });
+          }, 1500);
+        }, 5000);
+      }
     });
 
     // ─── REJOIN ROOM ────────────────────────────────────────────────────────
@@ -297,7 +372,7 @@ export function initRoomManager(io) {
 
     // ─── GET AVAILABLE HUMANS ───────────────────────────────────────────────
     socket.on('get-available-humans', ({ role }) => {
-      if (!['sde', 'hr', 'pm'].includes(role)) return;
+      if (!['sde', 'hr', 'pm', 'ml_intern', 'sde_intern'].includes(role)) return;
 
       const availableRooms = [];
       for (const [code, room] of rooms) {

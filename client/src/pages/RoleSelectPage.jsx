@@ -40,6 +40,26 @@ const ROLE_META = {
       'Draft launch announcement',
     ],
   },
+  ml_intern: {
+    accent: '#8b5cf6',
+    difficulty: 'Beginner',
+    tasks: [
+      'Read ML team onboarding docs',
+      'Explore & describe Titanic dataset',
+      'Build preprocessing + training pipeline',
+      'Submit model summary or predictions',
+    ],
+  },
+  sde_intern: {
+    accent: '#3b82f6',
+    difficulty: 'Beginner',
+    tasks: [
+      'Read the onboarding wiki',
+      'Fix a bug from a GitHub issue',
+      'Write a unit test for the fix',
+      'Submit a PR description',
+    ],
+  },
 };
 
 const CheckIcon = () => (
@@ -68,7 +88,7 @@ const UsersIconSm = () => (
 export default function RoleSelectPage() {
   const navigate = useNavigate();
   const { setRole, setTeamComposition, user, guestId, resetSim } = useSimStore();
-  const [counts, setCounts] = useState({ sde: 0, hr: 0, pm: 0 });
+  const [counts, setCounts] = useState({ sde: 0, hr: 0, pm: 0, ml_intern: 0, sde_intern: 0 });
   const [selecting, setSelecting] = useState(null);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [selectedRoleForTeam, setSelectedRoleForTeam] = useState(null);
@@ -151,7 +171,9 @@ export default function RoleSelectPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', position: 'relative' }}>
+      <div className="bg-grid-pattern" />
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', flex: 1 }}>
       <Navbar
         showAuth={false}
         rightContent={
@@ -239,15 +261,30 @@ export default function RoleSelectPage() {
         )}
       </main>
 
+      <footer style={{
+        textAlign: 'center',
+        padding: '24px',
+        color: 'var(--text-tertiary)',
+        fontSize: '0.8rem',
+        marginTop: 'auto'
+      }}>
+        Powered by <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>Jalebi.</span>
+      </footer>
+
       {/* Team Selection Modal */}
       {showTeamModal && (
         <TeamSelectionModal
           onSelect={handleTeamSelection}
+          onCancel={() => {
+            setShowTeamModal(false);
+            setSelecting(null);
+          }}
           role={selectedRoleForTeam}
           availableHumans={availableHumans}
           loadingHumans={loadingHumans}
         />
       )}
+    </div>
     </div>
   );
 }
@@ -255,43 +292,55 @@ export default function RoleSelectPage() {
 function RoleCard({ role, scenario, meta, liveCount, isLoading, disabled, delay, onSelect }) {
   const [hovered, setHovered] = useState(false);
   const accent = meta.accent || 'var(--accent)';
+  const isIntern = role.id.includes('intern');
+  const borderGradient = isIntern 
+    ? 'linear-gradient(135deg, #f59e0b, #f97316)' 
+    : 'linear-gradient(135deg, #3b82f6, #8b5cf6)';
 
   return (
     <button
       id={`role-card-${role.id}`}
       onClick={onSelect}
       disabled={disabled}
+      className="card-hover-lift"
       style={{
         background: 'var(--bg-card)',
-        border: `1px solid ${hovered ? `${accent}40` : 'var(--border)'}`,
+        border: 'none',
         borderRadius: 16,
         padding: '28px 24px',
         cursor: disabled ? 'wait' : 'pointer',
         textAlign: 'left',
-        transition: 'all 0.2s ease',
         position: 'relative',
-        overflow: 'hidden',
+        zIndex: 1,
         animation: `slideUp 0.5s ${delay}ms both`,
-        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
-        boxShadow: hovered ? `0 20px 40px rgba(0,0,0,0.3)` : 'var(--shadow-sm)',
         display: 'flex', flexDirection: 'column',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Top accent bar */}
+      {/* Gradient Border via mask compositing */}
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-        background: accent,
+        position: 'absolute',
+        inset: 0,
+        padding: 2,
+        borderRadius: 16,
+        background: borderGradient,
+        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+        WebkitMaskComposite: 'xor',
+        maskComposite: 'exclude',
+        zIndex: -1,
+        opacity: hovered || isLoading ? 1 : 0.4,
+        transition: 'opacity 0.3s',
+        boxShadow: hovered ? `0 0 20px ${isIntern ? 'rgba(249,115,22,0.2)' : 'rgba(139,92,246,0.2)'}` : 'none'
       }} />
 
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <h2 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3 }}>
-            {role.label}
+          <h2 className="font-display" style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>{role.icon}</span> {role.label}
           </h2>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
             {scenario?.teamName || role.description?.split('.')[0]}
           </div>
         </div>
@@ -341,8 +390,8 @@ function RoleCard({ role, scenario, meta, liveCount, isLoading, disabled, delay,
         </div>
       )}
 
-      {/* Difficulty */}
-      <div style={{ marginBottom: 20 }}>
+      {/* Difficulty & Badge */}
+      <div style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
         <span style={{
           display: 'inline-flex', alignItems: 'center',
           fontSize: '0.72rem', fontWeight: 600,
@@ -351,6 +400,18 @@ function RoleCard({ role, scenario, meta, liveCount, isLoading, disabled, delay,
         }}>
           {meta.difficulty || 'Intermediate'}
         </span>
+        {role.id.includes('intern') && (
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontSize: '0.72rem', fontWeight: 600,
+            color: '#fff',
+            background: 'linear-gradient(135deg, #a855f7, #6366f1)',
+            padding: '3px 10px', borderRadius: 20,
+            boxShadow: '0 2px 10px rgba(99, 102, 241, 0.2)'
+          }}>
+            Intern Track
+          </span>
+        )}
       </div>
 
       {/* CTA */}

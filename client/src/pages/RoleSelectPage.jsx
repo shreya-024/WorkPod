@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSimStore } from '../store/useSimStore.js';
 import { ROLES, getScenario } from '../scenarios/index.js';
 import api from '../lib/api.js';
 import Navbar from '../components/Navbar.jsx';
+import TeamSelectionModal from '../components/TeamSelectionModal.jsx';
+import { io } from 'socket.io-client';
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 const ROLE_META = {
   sde: {
@@ -63,11 +67,26 @@ const UsersIconSm = () => (
 
 export default function RoleSelectPage() {
   const navigate = useNavigate();
-  const { setRole, setRoomCode, user, guestId, resetSim } = useSimStore();
+  const { setRole, setTeamComposition, user, guestId, resetSim } = useSimStore();
   const [counts, setCounts] = useState({ sde: 0, hr: 0, pm: 0 });
   const [selecting, setSelecting] = useState(null);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [selectedRoleForTeam, setSelectedRoleForTeam] = useState(null);
+  const [availableHumans, setAvailableHumans] = useState([]);
+  const [loadingHumans, setLoadingHumans] = useState(false);
+  const probeSocketRef = useRef(null);
 
   useEffect(() => { resetSim(); }, []);
+
+  // Cleanup probe socket on unmount
+  useEffect(() => {
+    return () => {
+      if (probeSocketRef.current) {
+        probeSocketRef.current.disconnect();
+        probeSocketRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -85,10 +104,49 @@ export default function RoleSelectPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSelect = async (roleId) => {
+  const handleSelect = (roleId) => {
     setSelecting(roleId);
-    const scenario = getScenario(roleId);
-    setRole(roleId, scenario);
+    setSelectedRoleForTeam(roleId);
+    setAvailableHumans([]);
+    setLoadingHumans(true);
+    setShowTeamModal(true);
+
+    // Disconnect any previous probe socket
+    if (probeSocketRef.current) {
+      probeSocketRef.current.disconnect();
+    }
+
+    // Create a temporary socket just to query available humans
+    const probeSocket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
+    probeSocketRef.current = probeSocket;
+
+    probeSocket.on('connect', () => {
+      probeSocket.emit('get-available-humans', { role: roleId });
+    });
+
+    probeSocket.on('available-humans', ({ rooms }) => {
+      setAvailableHumans(rooms || []);
+      setLoadingHumans(false);
+      // Disconnect after receiving the data
+      probeSocket.disconnect();
+      probeSocketRef.current = null;
+    });
+
+    probeSocket.on('connect_error', () => {
+      setLoadingHumans(false);
+    });
+
+    // Fallback timeout in case server doesn't respond
+    setTimeout(() => {
+      setLoadingHumans(false);
+    }, 5000);
+  };
+
+  const handleTeamSelection = (teamType) => {
+    setTeamComposition(teamType);
+    const scenario = getScenario(selectedRoleForTeam);
+    setRole(selectedRoleForTeam, scenario);
+    setShowTeamModal(false);
     navigate('/sim');
   };
 
@@ -180,6 +238,16 @@ export default function RoleSelectPage() {
           </div>
         )}
       </main>
+
+      {/* Team Selection Modal */}
+      {showTeamModal && (
+        <TeamSelectionModal
+          onSelect={handleTeamSelection}
+          role={selectedRoleForTeam}
+          availableHumans={availableHumans}
+          loadingHumans={loadingHumans}
+        />
+      )}
     </div>
   );
 }

@@ -15,11 +15,21 @@ STRICT RULES — NEVER BREAK THESE:
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 
+// Chat model: short replies, 300 tokens is enough for 3-line persona responses
 const model = genAI.getGenerativeModel({
   model: GEMINI_MODEL,
   generationConfig: {
     maxOutputTokens: 300,
     temperature: 0.85,
+  },
+});
+
+// Evaluator model: needs more tokens to output the full JSON report (feedback + roadmap)
+const evaluatorModel = genAI.getGenerativeModel({
+  model: GEMINI_MODEL,
+  generationConfig: {
+    maxOutputTokens: 1500,
+    temperature: 0.4,
   },
 });
 
@@ -111,7 +121,7 @@ Session duration: ${Math.floor(durationSeconds / 60)} minutes
 Transcript:
 ${transcript.slice(0, 8000)}
 
-Return this exact JSON structure with ONLY these fields:
+  Return this exact JSON structure with ONLY these fields (no extra text, no markdown, no backticks):
 {
   "overallScore": <0-100 integer>,
   "communication": <0-100 integer>,
@@ -119,16 +129,21 @@ Return this exact JSON structure with ONLY these fields:
   "pressureHandling": <0-100 integer>,
   "feedback": ["<specific feedback point 1>", "<specific feedback point 2>", "<specific feedback point 3>"],
   "roadmap": [
-    { "title": "<skill/resource name>", "url": "<https://... real resource URL>", "reason": "<one line why this helps>" },
-    { "title": "<skill/resource name>", "url": "<https://... real resource URL>", "reason": "<one line why this helps>" },
-    { "title": "<skill/resource name>", "url": "<https://... real resource URL>", "reason": "<one line why this helps>" }
+    { "title": "<skill/resource name>", "link": "<https://... real resource URL>", "description": "<one line why this helps>" },
+    { "title": "<skill/resource name>", "link": "<https://... real resource URL>", "description": "<one line why this helps>" },
+    { "title": "<skill/resource name>", "link": "<https://... real resource URL>", "description": "<one line why this helps>" }
   ]
 }`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
+  const result = await evaluatorModel.generateContent(prompt);
+  const raw = result.response.text().trim();
 
-  // Strip markdown code fences if present
-  const cleaned = text.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+  // Robustly extract the outermost JSON object, regardless of surrounding text or fences
+  const jsonStart = raw.indexOf('{');
+  const jsonEnd = raw.lastIndexOf('}');
+  if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+    throw new Error(`No JSON object found in Gemini response: ${raw.slice(0, 200)}`);
+  }
+  const cleaned = raw.slice(jsonStart, jsonEnd + 1);
   return JSON.parse(cleaned);
 }

@@ -11,6 +11,7 @@ import EmergencyBanner from '../components/EmergencyBanner.jsx';
 import VoiceBtn from '../components/VoiceBtn.jsx';
 import TypingIndicator from '../components/TypingIndicator.jsx';
 import SimTopBar from '../components/SimTopBar.jsx';
+import TeamDisplay from '../components/TeamDisplay.jsx';
 import api from '../lib/api.js';
 
 const SendIcon = () => (
@@ -43,6 +44,7 @@ export default function SimulationPage() {
     setReport, setEndSessionFn,
     theme, setTheme,
     roomParticipants,
+    teamComposition,
   } = useSimStore();
 
   // Sync theme to document

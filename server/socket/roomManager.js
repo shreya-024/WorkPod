@@ -69,7 +69,13 @@ export function initRoomManager(io) {
 
       const room = getOrCreateRoom(role);
       currentRoom = room;
-      currentUser = { userId, userName: userName || 'User', socketId: socket.id };
+      currentUser = {
+        userId,
+        userName: userName || 'User',
+        socketId: socket.id,
+        isHuman: true,  // Track that this is a human player
+        joinedAt: new Date().toISOString(),
+      };
 
       // Add participant
       if (!room.participants.find(p => p.userId === userId)) {
@@ -208,6 +214,55 @@ export function initRoomManager(io) {
       } finally {
         io.to(room.code).emit('ai-typing', { typing: false });
       }
+    });
+
+    // ─── GET AVAILABLE HUMANS ─────────────────────────────────────
+    socket.on('get-available-humans', ({ role }) => {
+      if (!['sde', 'hr', 'pm'].includes(role)) return;
+
+      // Get all active rooms for this role
+      const availableRooms = [];
+      for (const [code, room] of rooms) {
+        if (room.role === role) {
+          const humans = room.participants.filter(p => p.isHuman);
+          if (humans.length > 0 && room.participants.length < 10) {
+            availableRooms.push({
+              roomCode: code,
+              humanCount: humans.length,
+              totalCount: room.participants.length,
+              humans: humans.map(h => ({ userName: h.userName, joinedAt: h.joinedAt })),
+            });
+          }
+        }
+      }
+      socket.emit('available-humans', { rooms: availableRooms });
+    });
+
+    // ─── SET TEAM COMPOSITION ─────────────────────────────────────
+    socket.on('set-team-composition', ({ teamType, preferredRoom }) => {
+      if (!currentRoom || !currentUser) return;
+
+      // teamType: 'all-ai' | 'mix-humans'
+      if (!['all-ai', 'mix-humans'].includes(teamType)) return;
+
+      // Store preference in room
+      if (!currentRoom.teamComposition) {
+        currentRoom.teamComposition = new Map();
+      }
+      currentRoom.teamComposition.set(currentUser.userId, {
+        preference: teamType,
+        preferredRoom,
+        setAt: new Date().toISOString(),
+      });
+
+      // Broadcast team composition update
+      const teamInfo = {
+        userId: currentUser.userId,
+        preference: teamType,
+        totalParticipants: currentRoom.participants.length,
+        humanParticipants: currentRoom.participants.filter(p => p.isHuman).length,
+      };
+      io.to(currentRoom.code).emit('team-composition-update', teamInfo);
     });
 
     // ─── DISCONNECT ───────────────────────────────────────────────

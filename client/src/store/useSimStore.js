@@ -37,11 +37,15 @@ export const useSimStore = create((set, get) => ({
   role: null,           // 'sde' | 'hr' | 'pm'
   scenario: null,       // full scenario JSON
   roomCode: null,
-  roomParticipants: [], // [{ userId, userName }]
+  roomParticipants: [], // [{ userId, userName, isHuman }]
+  teamComposition: null, // 'all-ai' | 'mix-humans' | null
+  availableHumans: [],  // list of humans available to join
 
   setRole: (role, scenario) => set({ role, scenario }),
   setRoomCode: (code) => set({ roomCode: code }),
   setRoomParticipants: (participants) => set({ roomParticipants: participants }),
+  setTeamComposition: (composition) => set({ teamComposition: composition }),
+  setAvailableHumans: (humans) => set({ availableHumans: humans }),
 
   // ── Messages ──────────────────────────────────────────────
   messages: [],
@@ -122,6 +126,8 @@ export const useSimStore = create((set, get) => ({
       scenario: null,
       roomCode: null,
       roomParticipants: [],
+      teamComposition: null,
+      availableHumans: [],
       messages: [],
       completedTasks: new Set(),
       timerSeconds: 2700,

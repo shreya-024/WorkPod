@@ -12,6 +12,8 @@ export function useSocket() {
     guestId,
     setRoomCode,
     setRoomParticipants,
+    setTeamComposition,
+    setAvailableHumans,
     addMessage,
     setAiTyping,
     setEmergencyActive,
@@ -63,6 +65,15 @@ export function useSocket() {
       });
     });
 
+    socket.on('team-composition-update', ({ userId, preference, totalParticipants, humanParticipants }) => {
+      setTeamComposition(preference);
+      // Update UI to show team composition
+    });
+
+    socket.on('available-humans', ({ rooms }) => {
+      setAvailableHumans(rooms);
+    });
+
     return () => {
       socket.disconnect();
       socketRef.current = null;
@@ -78,5 +89,13 @@ export function useSocket() {
     socketRef.current?.emit('emergency-trigger');
   };
 
-  return { sendMessage, triggerEmergency, socket: socketRef };
+  const getAvailableHumans = () => {
+    socketRef.current?.emit('get-available-humans', { role });
+  };
+
+  const setTeamCompositionPreference = (teamType) => {
+    socketRef.current?.emit('set-team-composition', { teamType, preferredRoom: null });
+  };
+
+  return { sendMessage, triggerEmergency, getAvailableHumans, setTeamCompositionPreference, socket: socketRef };
 }

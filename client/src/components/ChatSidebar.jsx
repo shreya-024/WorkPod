@@ -1,4 +1,5 @@
 import { useSimStore } from '../store/useSimStore.js';
+import TeamDisplay from './TeamDisplay.jsx';
 
 // ── SVG Icons ──────────────────────────────────────────────────────
 const HashIcon = () => (
@@ -82,7 +83,7 @@ const ChannelBtn = ({ label, active, onClick }) => (
 );
 
 export default function ChatSidebar({ scenario, chatChannel, onChannelChange, onTaskClick }) {
-  const { completedTasks } = useSimStore();
+  const { completedTasks, roomParticipants, teamComposition } = useSimStore();
   const teamMembers = scenario?.members || [];
   const mentorName = scenario?.mentorName || 'Team Lead';
 
@@ -98,6 +99,11 @@ export default function ChatSidebar({ scenario, chatChannel, onChannelChange, on
       flexShrink: 0,
     }}>
       <div style={{ flex: 1, overflowY: 'auto' }}>
+        {/* TEAM COMPOSITION DISPLAY */}
+        <div style={{ padding: '12px 8px' }}>
+          <TeamDisplay participants={roomParticipants} teamComposition={teamComposition} role={scenario?.role} />
+        </div>
+
         {/* CHANNELS */}
         <SectionLabel>Channels</SectionLabel>
         <div style={{ padding: '0 8px 4px' }}>

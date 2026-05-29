@@ -10,6 +10,7 @@ export function useSocket() {
     role,
     user,
     guestId,
+    roomCode,
     setRoomCode,
     setRoomParticipants,
     setTeamComposition,
@@ -17,25 +18,62 @@ export function useSocket() {
     addMessage,
     setAiTyping,
     setEmergencyActive,
+    messages,
   } = useSimStore();
 
   useEffect(() => {
     if (!role) return;
 
-    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      // Socket.io will auto-reconnect; we handle rejoin manually on each connect
+    });
     socketRef.current = socket;
 
     const userId = user?.id || guestId;
     const userName = user?.name || `Guest_${guestId.slice(-4)}`;
 
     socket.on('connect', () => {
-      socket.emit('join-room', { role, userId, userName });
+      // If we have a saved roomCode in the store, attempt to rejoin that room.
+      // Otherwise do a fresh join.
+      const savedRoomCode = useSimStore.getState().roomCode;
+      const teamComposition = useSimStore.getState().teamComposition;
+      if (savedRoomCode) {
+        socket.emit('rejoin-room', { roomCode: savedRoomCode, userId, userName });
+      } else {
+        socket.emit('join-room', { role, userId, userName, teamType: teamComposition });
+      }
     });
 
-    socket.on('room-joined', ({ roomCode, participants, isEmergencyActive }) => {
-      setRoomCode(roomCode);
+    socket.on('room-joined', ({ roomCode: rc, participants, isEmergencyActive, replayMessages }) => {
+      setRoomCode(rc);
       setRoomParticipants(participants);
+
+      // Restore emergency banner if it was active
       if (isEmergencyActive) setEmergencyActive(true);
+
+      // Replay messages from server (only on rejoin — avoids duplicates on fresh join)
+      if (replayMessages && replayMessages.length > 0) {
+        const currentIds = new Set(useSimStore.getState().messages.map(m => m.timestamp + m.content));
+        replayMessages.forEach(msg => {
+          const key = msg.timestamp + msg.content;
+          if (!currentIds.has(key)) {
+            if (msg.senderType === 'system') {
+              addMessage({ sender: 'System', senderType: 'system', content: msg.content, timestamp: msg.timestamp });
+            } else {
+              addMessage(msg);
+            }
+          }
+        });
+      }
+    });
+
+    // Server signals the saved room is gone — fall back to fresh join
+    socket.on('rejoin-failed', ({ reason }) => {
+      console.warn('[socket] Rejoin failed:', reason);
+      // Clear stale roomCode and join fresh
+      setRoomCode(null);
+      socket.emit('join-room', { role, userId, userName });
     });
 
     socket.on('room-update', ({ participants }) => {
@@ -65,9 +103,8 @@ export function useSocket() {
       });
     });
 
-    socket.on('team-composition-update', ({ userId, preference, totalParticipants, humanParticipants }) => {
+    socket.on('team-composition-update', ({ preference }) => {
       setTeamComposition(preference);
-      // Update UI to show team composition
     });
 
     socket.on('available-humans', ({ rooms }) => {

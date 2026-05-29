@@ -135,32 +135,27 @@ export default function TeamSelectionModal({ onSelect, role, availableHumans = [
         {/* Option 2: Mix with Humans */}
         <button
           onClick={() => handleSelect('mix-humans')}
-          disabled={!hasHumans && !loadingHumans}
           style={{
             width: '100%',
             padding: '20px 24px',
             marginBottom: 24,
             background: selected === 'mix-humans' ? 'var(--accent)10' : 'var(--bg-primary)',
-            border: selected === 'mix-humans'
-              ? '2px solid var(--accent)'
-              : (hasHumans || loadingHumans)
-                ? '1px solid var(--border)'
-                : '1px solid var(--border)40',
+            border: selected === 'mix-humans' ? '2px solid var(--accent)' : '1px solid var(--border)',
             borderRadius: 12,
-            cursor: (hasHumans || loadingHumans) ? 'pointer' : 'not-allowed',
+            cursor: 'pointer',
             transition: 'all 0.2s',
             display: 'flex',
             alignItems: 'flex-start',
             gap: 16,
-            opacity: (hasHumans || loadingHumans) ? 1 : 0.6,
+            opacity: 1,
           }}
           onMouseEnter={(e) => {
-            if (selected !== 'mix-humans' && hasHumans) {
+            if (selected !== 'mix-humans') {
               e.currentTarget.style.borderColor = 'var(--accent)40';
             }
           }}
           onMouseLeave={(e) => {
-            if (selected !== 'mix-humans' && hasHumans) {
+            if (selected !== 'mix-humans') {
               e.currentTarget.style.borderColor = 'var(--border)';
             }
           }}
@@ -195,7 +190,7 @@ export default function TeamSelectionModal({ onSelect, role, availableHumans = [
                 )
                 : hasHumans
                   ? `${availableHumans.reduce((sum, room) => sum + room.humanCount, 0)} people available to join`
-                  : 'No humans available right now'}
+                  : 'Start a new multiplayer room'}
             </div>
 
             {/* Show available humans */}

@@ -1,63 +1,65 @@
 import { useSimStore } from '../store/useSimStore.js';
-import TeamDisplay from './TeamDisplay.jsx';
 
 // ── SVG Icons ──────────────────────────────────────────────────────
 const HashIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
     <line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
     <line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
   </svg>
 );
 const CheckSquareIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="9 11 12 14 22 4"/>
     <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
   </svg>
 );
 const UserGroupIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
     <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
   </svg>
 );
 const GraduationIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
     <path d="M6 12v5c3 3 9 3 12 0v-5"/>
   </svg>
 );
 
+/* ── Section label — tight, Teams-style ──── */
 const SectionLabel = ({ children }) => (
   <div style={{
     fontSize: '0.68rem',
     fontWeight: 700,
     textTransform: 'uppercase',
-    letterSpacing: '0.1em',
+    letterSpacing: '0.08em',
     color: 'var(--text-tertiary)',
-    padding: '14px 12px 6px',
+    padding: '10px 10px 4px',
+    display: 'flex', alignItems: 'center', gap: 4,
   }}>
     {children}
   </div>
 );
 
+/* ── Channel row — 32px height, Teams density ──── */
 const ChannelBtn = ({ label, active, onClick }) => (
   <button
     onClick={onClick}
     style={{
       width: '100%',
-      padding: '7px 10px',
-      marginBottom: 2,
-      background: active ? 'var(--accent-muted)' : 'transparent',
+      height: 32,
+      padding: '0 10px',
+      background: active ? 'var(--accent)' : 'transparent',
       border: 'none',
-      borderRadius: 6,
-      color: active ? 'var(--accent)' : 'var(--text-secondary)',
+      borderRadius: 4,
+      color: active ? '#ffffff' : 'var(--text-secondary)',
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
-      gap: 8,
-      fontSize: '0.85rem',
+      gap: 6,
+      fontSize: '0.75rem',
       fontWeight: active ? 600 : 400,
-      transition: 'all 0.15s',
+      transition: 'background 0.12s, color 0.12s',
       textAlign: 'left',
     }}
     onMouseEnter={e => {
@@ -73,7 +75,7 @@ const ChannelBtn = ({ label, active, onClick }) => (
       }
     }}
   >
-    <span style={{ color: active ? 'var(--accent)' : 'var(--text-tertiary)', flexShrink: 0 }}>
+    <span style={{ color: active ? '#ffffff' : 'var(--text-tertiary)', flexShrink: 0, opacity: 0.8 }}>
       <HashIcon />
     </span>
     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -83,13 +85,16 @@ const ChannelBtn = ({ label, active, onClick }) => (
 );
 
 export default function ChatSidebar({ scenario, chatChannel, onChannelChange, onTaskClick }) {
-  const { completedTasks, roomParticipants, teamComposition } = useSimStore();
+  const { completedTasks, roomParticipants, user, guestId, timerSeconds } = useSimStore();
   const teamMembers = scenario?.members || [];
-  const mentorName = scenario?.mentorName || 'Team Lead';
+  const myId = user?.id || guestId;
+
+  const elapsed = 2700 - timerSeconds;
+  const percentElapsed = Math.round((elapsed / 2700) * 100);
 
   return (
     <aside style={{
-      width: 240,
+      width: 260,
       background: 'var(--bg-secondary)',
       borderRight: '1px solid var(--border)',
       display: 'flex',
@@ -98,155 +103,231 @@ export default function ChatSidebar({ scenario, chatChannel, onChannelChange, on
       overflow: 'hidden',
       flexShrink: 0,
     }}>
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        {/* TEAM COMPOSITION DISPLAY */}
-        <div style={{ padding: '12px 8px' }}>
-          <TeamDisplay participants={roomParticipants} teamComposition={teamComposition} role={scenario?.role} />
-        </div>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 16 }}>
 
-        {/* CHANNELS */}
-        <SectionLabel>Channels</SectionLabel>
-        <div style={{ padding: '0 8px 4px' }}>
+        {/* 1. CHANNELS */}
+        <SectionLabel><HashIcon /> Channels</SectionLabel>
+        <div style={{ padding: '0 6px 4px' }}>
           <ChannelBtn label="team-general" active={chatChannel === 'team'}   onClick={() => onChannelChange('team')} />
           <ChannelBtn label="standup"      active={false}                    onClick={() => onChannelChange('team')} />
+          {/* Mentor — clickable row as channel */}
+          <button
+            onClick={() => onChannelChange('mentor')}
+            style={{
+              height: 32, padding: '0 10px', borderRadius: 4,
+              background: chatChannel === 'mentor' ? 'var(--accent)' : 'transparent',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+              width: '100%', textAlign: 'left',
+              color: chatChannel === 'mentor' ? '#ffffff' : 'var(--text-secondary)',
+              fontSize: '0.75rem', fontWeight: chatChannel === 'mentor' ? 600 : 400,
+              transition: 'background 0.12s, color 0.12s',
+            }}
+            onMouseEnter={e => {
+              if (chatChannel !== 'mentor') {
+                e.currentTarget.style.background = 'var(--bg-tertiary)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }
+            }}
+            onMouseLeave={e => {
+              if (chatChannel !== 'mentor') {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }
+            }}
+          >
+            <span style={{ color: chatChannel === 'mentor' ? '#ffffff' : 'var(--text-tertiary)', flexShrink: 0, opacity: 0.8 }}>
+              <GraduationIcon />
+            </span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              mentor
+            </span>
+          </button>
           <ChannelBtn label="incidents"    active={false}                    onClick={() => onChannelChange('team')} />
         </div>
 
-        <div style={{ height: 1, background: 'var(--border)', margin: '8px 12px' }} />
+        <div style={{ height: 1, background: 'var(--border)', margin: '6px 10px' }} />
 
-        {/* TEAM */}
-        <SectionLabel>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <UserGroupIcon /> Team
-          </span>
-        </SectionLabel>
-        <div style={{ padding: '0 8px 4px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* 2. TEAM MEMBERS (AI Only) */}
+        <SectionLabel><UserGroupIcon /> Team</SectionLabel>
+        <div style={{ padding: '0 6px 4px', display: 'flex', flexDirection: 'column' }}>
           {teamMembers.map(member => (
             <div key={member.name} style={{
-              padding: '7px 10px',
-              borderRadius: 6,
+              height: 36,
+              padding: '0 10px',
+              borderRadius: 4,
               display: 'flex',
               alignItems: 'center',
               gap: 8,
             }}>
-              {/* Avatar */}
               <div style={{
-                width: 28, height: 28, borderRadius: '50%',
+                width: 32, height: 32, borderRadius: '50%',
                 background: member.color || 'var(--accent)',
                 color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.62rem', fontWeight: 700, flexShrink: 0,
+                fontSize: '0.65rem', fontWeight: 700, flexShrink: 0,
               }}>
                 {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
               </div>
 
-              {/* Name + role */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{
+                  fontSize: '13px', fontWeight: 500,
+                  color: 'var(--text-primary)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  lineHeight: 1.2,
+                }}>
                   {member.name}
                 </div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{
+                  fontSize: '11px', color: 'var(--text-secondary)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  lineHeight: 1.2,
+                }}>
                   {member.role}
                 </div>
               </div>
 
-              {/* Online dot */}
               <div style={{
-                width: 7, height: 7, borderRadius: '50%',
+                width: 6, height: 6, borderRadius: '50%',
                 background: 'var(--success)', flexShrink: 0,
-                boxShadow: '0 0 4px var(--success)',
               }} />
             </div>
           ))}
-
-          {/* Mentor */}
-          <button
-            onClick={() => onChannelChange('mentor')}
-            style={{
-              padding: '7px 10px', borderRadius: 6,
-              background: chatChannel === 'mentor' ? 'var(--accent-muted)' : 'transparent',
-              border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 8,
-              width: '100%', textAlign: 'left',
-            }}
-            onMouseEnter={e => { if (chatChannel !== 'mentor') e.currentTarget.style.background = 'var(--bg-tertiary)'; }}
-            onMouseLeave={e => { if (chatChannel !== 'mentor') e.currentTarget.style.background = 'transparent'; }}
-          >
-            <div style={{
-              width: 28, height: 28, borderRadius: '50%',
-              background: 'var(--accent)', color: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.62rem', fontWeight: 700, flexShrink: 0,
-            }}>
-              <GraduationIcon />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 500, color: chatChannel === 'mentor' ? 'var(--accent)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {mentorName}
-              </div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>Team Lead</div>
-            </div>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--success)', flexShrink: 0, boxShadow: '0 0 4px var(--success)' }} />
-          </button>
         </div>
 
-        <div style={{ height: 1, background: 'var(--border)', margin: '8px 12px' }} />
+        {/* 3. IN THIS ROOM (Humans Only) */}
+        {roomParticipants.length > 0 && (
+          <>
+            <div style={{ height: 1, background: 'var(--border)', margin: '6px 10px' }} />
+            <SectionLabel><UserGroupIcon /> In This Room</SectionLabel>
+            <div style={{ padding: '0 6px 4px', display: 'flex', flexDirection: 'column' }}>
+              {roomParticipants.map((p, i) => (
+                <div key={p.userId || i} style={{
+                  height: 36,
+                  padding: '0 10px',
+                  borderRadius: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: p.userId === myId ? 'var(--accent)' : 'var(--bg-tertiary)',
+                    border: p.userId === myId ? 'none' : '1px solid var(--border)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.65rem', fontWeight: 700,
+                    color: p.userId === myId ? '#fff' : 'var(--text-secondary)',
+                    flexShrink: 0,
+                  }}>
+                    {(p.userName || 'U').slice(0, 1).toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{
+                      fontSize: '13px', fontWeight: 500,
+                      color: 'var(--text-primary)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      lineHeight: 1.2,
+                    }}>
+                      {p.userName} {p.userId === myId && <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(you)</span>}
+                    </div>
+                    <div style={{
+                      fontSize: '11px', color: 'var(--text-secondary)',
+                      lineHeight: 1.2,
+                    }}>
+                      Participant
+                    </div>
+                  </div>
+                  <div style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: 'var(--success)', flexShrink: 0,
+                  }} />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
-        {/* YOUR TASKS */}
+        <div style={{ height: 1, background: 'var(--border)', margin: '6px 10px' }} />
+
+        {/* 4. TASKS */}
         <SectionLabel>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <CheckSquareIcon />
-            Your Tasks · {completedTasks.size}/{scenario?.tasks?.length || 0}
-          </span>
+          <CheckSquareIcon />
+          Tasks · {completedTasks.size}/{scenario?.tasks?.length || 0} done
         </SectionLabel>
-        <div style={{ padding: '0 8px 12px', display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {(scenario?.tasks || []).map(task => {
+        <div style={{ padding: '0 6px 10px', display: 'flex', flexDirection: 'column' }}>
+          {(scenario?.tasks || []).map((task, idx, arr) => {
             const done = completedTasks.has(task.id);
+            const isLast = idx === arr.length - 1;
             return (
               <button
                 key={task.id}
                 onClick={() => onTaskClick && onTaskClick(task.id, task.title)}
                 style={{
-                  width: '100%', padding: '8px 10px',
-                  borderRadius: 6, border: 'none',
-                  background: done ? 'rgba(46,204,138,0.06)' : 'transparent',
+                  display: 'flex', alignItems: 'center', gap: 9,
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: isLast ? 'none' : '1px solid var(--border)',
+                  borderRadius: 4,
+                  padding: '7px 8px',
                   cursor: 'pointer', textAlign: 'left',
-                  display: 'flex', alignItems: 'flex-start', gap: 8,
-                  transition: 'background 0.15s',
-                  opacity: done ? 0.65 : 1,
+                  transition: 'background 0.12s', width: '100%',
+                  opacity: done ? 0.6 : 1,
                 }}
                 onMouseEnter={e => { if (!done) e.currentTarget.style.background = 'var(--bg-tertiary)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = done ? 'rgba(46,204,138,0.06)' : 'transparent'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
               >
-                {/* Checkbox */}
                 <div style={{
-                  width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                  border: `2px solid ${done ? 'var(--success)' : 'var(--border-hover)'}`,
+                  width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                  border: `1.5px solid ${done ? 'var(--success)' : 'var(--border-hover)'}`,
                   background: done ? 'var(--success)' : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginTop: 2, transition: 'all 0.2s', color: '#fff',
+                  color: '#fff', transition: 'all 0.15s',
                 }}>
                   {done && (
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   )}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{
-                    fontSize: '0.78rem', fontWeight: 500,
-                    color: done ? 'var(--text-tertiary)' : 'var(--text-primary)',
-                    textDecoration: done ? 'line-through' : 'none',
-                    lineHeight: 1.4,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {task.title}
-                  </p>
-                  <p style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', marginTop: 2 }}>{task.meta}</p>
-                </div>
+                <span style={{
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: done ? 'var(--text-tertiary)' : 'var(--text-primary)',
+                  textDecoration: done ? 'line-through' : 'none',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  flex: 1,
+                }}>
+                  {task.title}
+                </span>
+                <span style={{
+                  fontSize: '11px', fontWeight: 700,
+                  color: 'var(--warning)',
+                  flexShrink: 0,
+                }}>
+                  +{task.points}
+                </span>
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* 5. SESSION PROGRESS */}
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: 6, fontWeight: 600,
+        }}>
+          <span>{completedTasks.size}/{scenario?.tasks?.length || 0} tasks</span>
+          <span>{percentElapsed}% complete</span>
+        </div>
+        <div style={{ height: 3, background: 'var(--bg-tertiary)', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{
+            width: `${percentElapsed}%`, height: '100%',
+            background: 'var(--accent)',
+            borderRadius: 99, transition: 'width 1s linear',
+          }} />
         </div>
       </div>
     </aside>

@@ -5,7 +5,6 @@ import { useSocket } from '../hooks/useSocket.js';
 import { useVoice } from '../hooks/useVoice.js';
 import ChatWindow from '../components/ChatWindow.jsx';
 import ChatSidebar from '../components/ChatSidebar.jsx';
-import TaskSidebar from '../components/TaskSidebar.jsx';
 import TaskArtifact from '../components/TaskArtifact.jsx';
 import EmergencyBanner from '../components/EmergencyBanner.jsx';
 import VoiceBtn from '../components/VoiceBtn.jsx';
@@ -145,7 +144,23 @@ export default function SimulationPage() {
 
   if (!scenario) return null;
 
+  // Inject per-theme bubble colours as CSS custom properties
+  // ai-bubble: #f3f2f1 light / #2d2d2d dark
+  // user-bubble: #e8f0fb light / #1e3a5f dark
+  const bubbleStyle = `
+    :root, html[data-theme="dark"] {
+      --ai-bubble: #2d2d2d;
+      --user-bubble: #1e3a5f;
+    }
+    html[data-theme="light"] {
+      --ai-bubble: #f3f2f1;
+      --user-bubble: #e8f0fb;
+    }
+  `;
+
   return (
+    <>
+    <style>{bubbleStyle}</style>
     <div className="sim-layout">
       {/* TOP BAR */}
       <SimTopBar
@@ -167,16 +182,6 @@ export default function SimulationPage() {
           onChannelChange={setChatChannel}
           onTaskClick={(id, title) => setSelectedTask({ id, title })}
         />
-
-        {/* Right: task sidebar (fixed 240px) + main chat */}
-        <aside className="sim-sidebar">
-          <TaskSidebar
-            scenario={scenario}
-            timerSeconds={timerSeconds}
-            percentElapsed={percentElapsed}
-            onTaskClick={(id, title) => setSelectedTask({ id, title })}
-          />
-        </aside>
 
         {/* Main chat */}
         <main className="sim-main">
@@ -221,64 +226,69 @@ export default function SimulationPage() {
             </div>
           )}
 
-          {/* Input */}
+          {/* Input — flat Teams style: border-top container, input bg muted, no glow */}
           <div style={{
-            padding: '12px 16px 16px',
+            padding: '8px 12px 10px',
             borderTop: '1px solid var(--border)',
             background: 'var(--bg-secondary)',
             flexShrink: 0,
           }}>
             <div style={{
-              display: 'flex', gap: 10, alignItems: 'flex-end',
-              background: 'var(--bg-primary)',
-              border: '1px solid var(--border)',
-              borderRadius: 12,
-              padding: '8px 12px',
-              transition: 'border-color 0.2s, box-shadow 0.2s',
-            }}
-              onFocus={() => {}}
-            >
+              display: 'flex', gap: 6, alignItems: 'flex-end',
+            }}>
               <textarea
                 ref={inputRef}
                 id="chat-input"
                 placeholder={chatChannel === 'mentor'
                   ? `Ask ${scenario.mentorName || 'Team Lead'} a question...`
-                  : `Message # team-general...`}
+                  : `Message #team-general...`}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 rows={1}
                 style={{
-                  flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                  color: 'var(--text-primary)', fontFamily: 'var(--font-base)',
-                  fontSize: '0.9rem', resize: 'none', lineHeight: 1.5,
-                  maxHeight: '6rem', overflowY: 'auto',
+                  flex: 1,
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 4,
+                  outline: 'none',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-base)',
+                  fontSize: '0.875rem',
+                  resize: 'none',
+                  lineHeight: 1.5,
+                  padding: '7px 10px',
+                  maxHeight: '5rem',
+                  overflowY: 'auto',
+                  transition: 'border-color 0.15s',
                 }}
+                onFocus={e => { e.target.style.borderColor = '#0a66c2'; }}
+                onBlur={e => { e.target.style.borderColor = 'var(--border)'; }}
                 onInput={e => {
                   e.target.style.height = 'auto';
-                  e.target.style.height = Math.min(e.target.scrollHeight, 96) + 'px';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 80) + 'px';
                 }}
               />
-              <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0, paddingBottom: 1 }}>
                 <VoiceBtn onResult={handleVoiceResult} />
                 <button
                   id="send-message-btn"
                   onClick={handleSend}
                   disabled={!input.trim() || aiTyping}
                   style={{
-                    width: 34, height: 34, borderRadius: 8, border: 'none',
-                    background: input.trim() && !aiTyping ? 'var(--accent)' : 'var(--bg-tertiary)',
+                    width: 32, height: 32, borderRadius: 4, border: 'none',
+                    background: input.trim() && !aiTyping ? '#0a66c2' : 'var(--bg-tertiary)',
                     color: input.trim() && !aiTyping ? '#fff' : 'var(--text-tertiary)',
                     cursor: input.trim() && !aiTyping ? 'pointer' : 'not-allowed',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.2s', flexShrink: 0,
+                    transition: 'all 0.15s', flexShrink: 0,
                   }}
                 >
                   <SendIcon />
                 </button>
               </div>
             </div>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: 6, paddingLeft: 4 }}>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', marginTop: 4, paddingLeft: 2 }}>
               Enter to send · Shift+Enter for newline · Chrome for voice
             </p>
           </div>
@@ -410,5 +420,6 @@ export default function SimulationPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

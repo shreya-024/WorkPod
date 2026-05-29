@@ -1,10 +1,17 @@
 import ThemeToggle from './ThemeToggle.jsx';
 
 const AlertTriangle = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
     <line x1="12" y1="9" x2="12" y2="13" />
     <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
+const ClockIcon = ({ color }) => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
   </svg>
 );
 
@@ -32,34 +39,34 @@ export default function SimTopBar({
 
   return (
     <header className="sim-topbar">
-      {/* Left */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* Left — logo + scenario */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{
           fontFamily: 'var(--font-display)',
           fontWeight: 800,
-          fontSize: '1rem',
+          fontSize: '0.95rem',
           color: 'var(--text-primary)',
           letterSpacing: '-0.02em',
         }}>
-          Work<span style={{ color: 'var(--accent)' }}>Pod</span>
+          Work<span style={{ color: '#0a66c2' }}>Pod</span>
         </span>
-        <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
-        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+        <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
           {scenario?.teamName}
           {scenario?.label && (
-            <span style={{ color: 'var(--text-primary)', marginLeft: 6 }}>
+            <span style={{ color: 'var(--text-primary)', marginLeft: 5 }}>
               — {scenario.label}
             </span>
           )}
         </span>
         {othersCount > 0 && (
-          <span className="badge badge-primary" style={{ fontSize: '0.68rem' }}>
+          <span className="badge badge-primary" style={{ fontSize: '0.65rem' }}>
             +{othersCount} in room
           </span>
         )}
         {roomCode && (
           <span style={{
-            fontSize: '0.68rem', color: 'var(--text-tertiary)',
+            fontSize: '0.65rem', color: 'var(--text-tertiary)',
             fontFamily: 'monospace',
           }}>
             #{roomCode.split('-').slice(-1)[0]}
@@ -67,16 +74,16 @@ export default function SimTopBar({
         )}
       </div>
 
-      {/* Center */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Center — "Simulation Active" as plain text + dot (no pill) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{
-          width: 8, height: 8, borderRadius: '50%',
+          width: 7, height: 7, borderRadius: '50%',
           background: 'var(--success)',
-          boxShadow: '0 0 6px var(--success)',
           display: 'inline-block',
           animation: 'pulse 2s infinite',
+          flexShrink: 0,
         }} />
-        <span style={{ fontSize: '0.8rem', color: 'var(--success)', fontWeight: 600 }}>
+        <span style={{ fontSize: '0.78rem', color: 'var(--success)', fontWeight: 600 }}>
           Simulation Active
         </span>
       </div>
@@ -88,44 +95,33 @@ export default function SimTopBar({
             id="emergency-trigger-btn"
             className="btn btn-danger btn-sm"
             onClick={onEmergency}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, animation: 'pulse-ring 2s infinite' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, animation: 'pulse-ring 2s infinite' }}
           >
             <AlertTriangle />
             Emergency
           </button>
         )}
 
-        {/* Timer */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: timerCritical
-            ? 'rgba(224,85,85,0.1)'
-            : timerWarn
-            ? 'rgba(240,165,0,0.08)'
-            : 'var(--accent-muted)',
-          border: `1px solid ${timerCritical ? 'rgba(224,85,85,0.3)' : timerWarn ? 'rgba(240,165,0,0.25)' : 'var(--border)'}`,
-          borderRadius: 8,
-          padding: '4px 12px',
-        }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={timerColor} strokeWidth="2.5" strokeLinecap="round">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
+        {/* Timer — monospace text only, no background pill (use colour change only) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <ClockIcon color={timerColor} />
           <span style={{
             fontFamily: 'monospace',
             fontWeight: 700,
-            fontSize: '0.95rem',
+            fontSize: '0.9rem',
             color: timerColor,
-            letterSpacing: '0.05em',
+            letterSpacing: '0.04em',
           }}>
             {mins}:{secs}
           </span>
         </div>
 
+        {/* End Session — ghost with accent border */}
         <button
           id="end-session-btn"
           className="btn btn-ghost btn-sm"
           onClick={onEndSession}
+          style={{ fontSize: '0.78rem' }}
         >
           End Session
         </button>

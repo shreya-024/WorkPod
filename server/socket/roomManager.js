@@ -6,37 +6,41 @@ import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Load scenario data
+// ─── Scenario loader ─────────────────────────────────────────────────────────
 function loadScenario(role) {
   const raw = readFileSync(join(__dirname, `../scenarios/${role}.json`), 'utf-8');
   return JSON.parse(raw);
 }
 
-// In-memory room state: roomCode -> RoomState
-// RoomState: { role, code, history[], participants[], systemPrompt, isEmergencyActive, aiTyping }
+// roomCode -> RoomState
 const rooms = new Map();
 
-// role -> active roomCode (join window: 2 minutes)
-const roleActiveRoom = new Map();
+// ─── Room message log (for replay on rejoin) ─────────────────────────────────
+// Stored inside each room as room.messageLog[]
+const REPLAY_COUNT = 20; // last N messages replayed to rejoining users
+const EMPTY_ROOM_TTL_MS = 5 * 60 * 1000; // 5 minutes before an empty room is deleted
 
-function getOrCreateRoom(role) {
-  // Check if there's an active room for this role created within 2 min
-  if (roleActiveRoom.has(role)) {
-    const code = roleActiveRoom.get(role);
-    const room = rooms.get(code);
-    if (room && room.participants.length < 10) {
-      return room;
+function getOrCreateRoom(role, teamType) {
+  // If user wants 'mix-humans', find an existing non-full room for this role
+  if (teamType === 'mix-humans') {
+    for (const [code, room] of rooms.entries()) {
+      if (room.role === role && room.teamType === 'mix-humans' && room.participants.length < 10) {
+        return room;
+      }
     }
   }
-  // Create new room
+
+  // Otherwise, create a new room (either because 'all-ai' or no 'mix-humans' room found)
   const scenario = loadScenario(role);
   const code = `${role}-${nanoid(6)}`;
   const room = {
     role,
     code,
+    teamType,             // store whether this room is mix-humans or all-ai
     history: [],
     mentorHistory: [],
     participants: [],
+    messageLog: [],       // full ordered chat log for replay
     scenario,
     systemPrompt: scenario.systemPrompt,
     emergencyPrompt: scenario.emergencyPrompt,
@@ -44,69 +48,142 @@ function getOrCreateRoom(role) {
     isEmergencyActive: false,
     aiTyping: false,
     createdAt: Date.now(),
+    emptyTtlTimer: null,  // set when last participant leaves
   };
   rooms.set(code, room);
-  roleActiveRoom.set(role, code);
-
-  // Expire room assignment after 2 minutes
-  setTimeout(() => {
-    if (roleActiveRoom.get(role) === code) {
-      roleActiveRoom.delete(role);
-    }
-  }, 2 * 60 * 1000);
 
   return room;
 }
 
+/** Append a message to room.messageLog, keeping last REPLAY_COUNT entries. */
+function logMessage(room, msg) {
+  room.messageLog.push(msg);
+  if (room.messageLog.length > REPLAY_COUNT) {
+    room.messageLog = room.messageLog.slice(room.messageLog.length - REPLAY_COUNT);
+  }
+}
+
+/** Cancel any pending empty-room TTL timer on a room. */
+function cancelEmptyTimer(room) {
+  if (room.emptyTtlTimer) {
+    clearTimeout(room.emptyTtlTimer);
+    room.emptyTtlTimer = null;
+  }
+}
+
+/** Schedule room deletion after TTL if it stays empty. */
+function scheduleEmptyTimer(room) {
+  cancelEmptyTimer(room);
+  room.emptyTtlTimer = setTimeout(() => {
+    if (room.participants.length === 0) {
+      rooms.delete(room.code);
+    }
+  }, EMPTY_ROOM_TTL_MS);
+}
+
+// ─── Socket manager ───────────────────────────────────────────────────────────
 export function initRoomManager(io) {
   io.on('connection', (socket) => {
     let currentRoom = null;
     let currentUser = null;
 
-    // ─── JOIN ROOM ────────────────────────────────────────────────
-    socket.on('join-room', ({ role, userId, userName }) => {
+    // ─── JOIN ROOM ──────────────────────────────────────────────────────────
+    socket.on('join-room', ({ role, userId, userName, teamType }) => {
       if (!['sde', 'hr', 'pm'].includes(role)) return;
 
-      const room = getOrCreateRoom(role);
+      const room = getOrCreateRoom(role, teamType);
       currentRoom = room;
       currentUser = {
         userId,
         userName: userName || 'User',
         socketId: socket.id,
-        isHuman: true,  // Track that this is a human player
+        isHuman: true,
         joinedAt: new Date().toISOString(),
       };
 
-      // Add participant
+      // Cancel any pending empty-room TTL now that someone is joining
+      cancelEmptyTimer(room);
+
+      // Deduplicate by userId
       if (!room.participants.find(p => p.userId === userId)) {
         room.participants.push(currentUser);
       }
 
       socket.join(room.code);
 
-      // Ack to joining user
       socket.emit('room-joined', {
         roomCode: room.code,
         participants: room.participants,
         isEmergencyActive: room.isEmergencyActive,
       });
 
-      // Notify room of new participant
       io.to(room.code).emit('room-update', { participants: room.participants });
 
-      // System message to room
-      io.to(room.code).emit('system-message', {
+      const joinMsg = {
+        sender: 'System',
+        senderType: 'system',
         content: `${currentUser.userName} joined the workspace.`,
         timestamp: new Date().toISOString(),
-      });
+      };
+      logMessage(room, joinMsg);
+      io.to(room.code).emit('system-message', joinMsg);
     });
 
-    // ─── USER MESSAGE ─────────────────────────────────────────────
+    // ─── REJOIN ROOM ────────────────────────────────────────────────────────
+    // Called by the client on socket reconnect if it has a saved roomCode.
+    socket.on('rejoin-room', ({ roomCode, userId, userName }) => {
+      const room = rooms.get(roomCode);
+      if (!room) {
+        // Room expired — tell client to fall back to a fresh join
+        socket.emit('rejoin-failed', { reason: 'Room no longer exists. Starting a new session.' });
+        return;
+      }
+
+      currentRoom = room;
+      currentUser = {
+        userId,
+        userName: userName || 'User',
+        socketId: socket.id,
+        isHuman: true,
+        joinedAt: new Date().toISOString(),
+      };
+
+      // Cancel TTL and restore participant
+      cancelEmptyTimer(room);
+      const existing = room.participants.find(p => p.userId === userId);
+      if (existing) {
+        existing.socketId = socket.id; // update stale socket ID
+      } else {
+        room.participants.push(currentUser);
+      }
+
+      socket.join(room.code);
+
+      // Send room-joined with the last N messages for replay
+      socket.emit('room-joined', {
+        roomCode: room.code,
+        participants: room.participants,
+        isEmergencyActive: room.isEmergencyActive,
+        replayMessages: room.messageLog.slice(-REPLAY_COUNT),
+      });
+
+      io.to(room.code).emit('room-update', { participants: room.participants });
+
+      const rejoinMsg = {
+        sender: 'System',
+        senderType: 'system',
+        content: `${currentUser.userName} rejoined the workspace.`,
+        timestamp: new Date().toISOString(),
+      };
+      logMessage(room, rejoinMsg);
+      io.to(room.code).emit('system-message', rejoinMsg);
+    });
+
+    // ─── USER MESSAGE ───────────────────────────────────────────────────────
     socket.on('user-message', async ({ content, userName, channel = 'team' }) => {
       if (!currentRoom) return;
       const room = currentRoom;
 
-      // Broadcast the user's message to all room participants
       const userMsg = {
         sender: userName || 'You',
         senderType: 'user',
@@ -115,6 +192,7 @@ export function initRoomManager(io) {
         timestamp: new Date().toISOString(),
         socketId: socket.id,
       };
+      logMessage(room, userMsg);
       io.to(room.code).emit('new-message', userMsg);
 
       // Guard: don't pile up AI calls
@@ -161,22 +239,26 @@ export function initRoomManager(io) {
               channel: 'team',
               timestamp: new Date().toISOString(),
             };
+
+        logMessage(room, aiMsg);
         io.to(room.code).emit('new-message', aiMsg);
       } catch (err) {
         console.error('Gemini error:', err.message);
-        io.to(room.code).emit('new-message', {
+        const errMsg = {
           sender: 'System',
           senderType: 'system',
           content: '⚠️ AI teammates are momentarily unavailable. Please try again.',
           timestamp: new Date().toISOString(),
-        });
+        };
+        logMessage(room, errMsg);
+        io.to(room.code).emit('new-message', errMsg);
       } finally {
         room.aiTyping = false;
         io.to(room.code).emit('ai-typing', { typing: false, channel });
       }
     });
 
-    // ─── EMERGENCY TRIGGER ────────────────────────────────────────
+    // ─── EMERGENCY TRIGGER ──────────────────────────────────────────────────
     socket.on('emergency-trigger', async () => {
       if (!currentRoom || currentRoom.isEmergencyActive) return;
       const room = currentRoom;
@@ -187,28 +269,24 @@ export function initRoomManager(io) {
         timestamp: new Date().toISOString(),
       });
 
-      // AI responds to emergency
       io.to(room.code).emit('ai-typing', { typing: true });
       try {
-        const aiText = await callGemini(
-          room.history,
-          room.emergencyPrompt,
-          null,
-        );
+        const aiText = await callGemini(room.history, room.emergencyPrompt, null);
         room.history.push({ role: 'user', parts: [{ text: room.emergencyPrompt }] });
         room.history.push({ role: 'model', parts: [{ text: aiText }] });
-
         if (room.history.length > 30) {
           room.history = room.history.slice(room.history.length - 30);
         }
 
-        io.to(room.code).emit('new-message', {
+        const emergencyMsg = {
           sender: 'AI',
           senderType: 'ai',
           content: aiText,
           timestamp: new Date().toISOString(),
           isEmergency: true,
-        });
+        };
+        logMessage(room, emergencyMsg);
+        io.to(room.code).emit('new-message', emergencyMsg);
       } catch (err) {
         console.error('Emergency Gemini error:', err.message);
       } finally {
@@ -216,14 +294,13 @@ export function initRoomManager(io) {
       }
     });
 
-    // ─── GET AVAILABLE HUMANS ─────────────────────────────────────
+    // ─── GET AVAILABLE HUMANS ───────────────────────────────────────────────
     socket.on('get-available-humans', ({ role }) => {
       if (!['sde', 'hr', 'pm'].includes(role)) return;
 
-      // Get all active rooms for this role
       const availableRooms = [];
       for (const [code, room] of rooms) {
-        if (room.role === role) {
+        if (room.role === role && room.teamType === 'mix-humans') {
           const humans = room.participants.filter(p => p.isHuman);
           if (humans.length > 0 && room.participants.length < 10) {
             availableRooms.push({
@@ -238,14 +315,11 @@ export function initRoomManager(io) {
       socket.emit('available-humans', { rooms: availableRooms });
     });
 
-    // ─── SET TEAM COMPOSITION ─────────────────────────────────────
+    // ─── SET TEAM COMPOSITION ───────────────────────────────────────────────
     socket.on('set-team-composition', ({ teamType, preferredRoom }) => {
       if (!currentRoom || !currentUser) return;
-
-      // teamType: 'all-ai' | 'mix-humans'
       if (!['all-ai', 'mix-humans'].includes(teamType)) return;
 
-      // Store preference in room
       if (!currentRoom.teamComposition) {
         currentRoom.teamComposition = new Map();
       }
@@ -255,7 +329,6 @@ export function initRoomManager(io) {
         setAt: new Date().toISOString(),
       });
 
-      // Broadcast team composition update
       const teamInfo = {
         userId: currentUser.userId,
         preference: teamType,
@@ -265,19 +338,26 @@ export function initRoomManager(io) {
       io.to(currentRoom.code).emit('team-composition-update', teamInfo);
     });
 
-    // ─── DISCONNECT ───────────────────────────────────────────────
+    // ─── DISCONNECT ─────────────────────────────────────────────────────────
     socket.on('disconnect', () => {
       if (!currentRoom || !currentUser) return;
       const room = currentRoom;
+
       room.participants = room.participants.filter(p => p.socketId !== socket.id);
       io.to(room.code).emit('room-update', { participants: room.participants });
-      io.to(room.code).emit('system-message', {
+
+      const leaveMsg = {
+        sender: 'System',
+        senderType: 'system',
         content: `${currentUser.userName} left the workspace.`,
         timestamp: new Date().toISOString(),
-      });
-      // Clean up empty rooms
+      };
+      logMessage(room, leaveMsg);
+      io.to(room.code).emit('system-message', leaveMsg);
+
+      // Instead of immediately deleting, give a 5-min TTL for rejoin
       if (room.participants.length === 0) {
-        rooms.delete(room.code);
+        scheduleEmptyTimer(room);
       }
     });
   });
@@ -289,7 +369,10 @@ export function initRoomManager(io) {
 export function getRoomParticipantCount(role) {
   let count = 0;
   for (const [, room] of rooms) {
-    if (room.role === role) count += room.participants.length;
+    if (room.role === role && room.teamType === 'mix-humans') {
+      const humans = room.participants.filter(p => p.isHuman);
+      count += humans.length;
+    }
   }
   return count;
 }

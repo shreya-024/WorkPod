@@ -166,16 +166,16 @@ export default function LandingPage() {
           </div>
 
           <h1 className="font-display animate-fadeIn" style={{
-            fontSize: 'clamp(2.2rem, 4vw, 3.25rem)',
-            fontWeight: 800,
-            lineHeight: 1.15,
-            letterSpacing: '-0.03em',
+            fontSize: 'clamp(2rem, 4vw, 3rem)',
+            fontWeight: 700,
+            lineHeight: 1.1,
+            letterSpacing: '-0.025em',
             color: 'var(--text-primary)',
             marginBottom: 24,
             animationDelay: '60ms',
           }}>
             Experience your first<br />day at work —<br />
-            <span style={{ color: 'var(--accent)' }}>before it happens</span>
+            <span style={{ color: '#0a66c2' }}>before it happens</span>
           </h1>
 
           <p style={{
@@ -208,10 +208,10 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Trust stats */}
+          {/* Trust stats — 13px, text-secondary color, no icon accent */}
           <div style={{
             display: 'flex',
-            gap: 28,
+            gap: 24,
             flexWrap: 'wrap',
             animation: 'fadeIn 0.5s 240ms both',
           }}>
@@ -220,9 +220,9 @@ export default function LandingPage() {
               { Icon: BrainIcon,    label: 'AI-Powered Feedback' },
               { Icon: UsersIcon,    label: 'Real Workplace Scenarios' },
             ].map(({ Icon, label }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: 'var(--accent)' }}><Icon /></span>
-                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{label}</span>
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ color: 'var(--text-secondary)', opacity: 0.7, display: 'flex' }}><Icon /></span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400 }}>{label}</span>
               </div>
             ))}
           </div>
@@ -233,9 +233,10 @@ export default function LandingPage() {
           <div style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--border)',
-            borderRadius: 16,
+            borderRadius: 12,
             overflow: 'hidden',
-            boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
+            /* light: crisp card shadow; dark: subtler */
+            boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
           }}>
             {/* Fake title bar */}
             <div style={{
@@ -257,7 +258,7 @@ export default function LandingPage() {
             </div>
 
             <div style={{ display: 'flex', height: 320 }}>
-              {/* Fake sidebar */}
+                {/* Fake sidebar */}
               <div style={{
                 width: 140,
                 background: 'var(--bg-secondary)',
@@ -270,15 +271,15 @@ export default function LandingPage() {
                 <div style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px', marginBottom: 4 }}>Channels</div>
                 {['# team-general', '# standup', '# incidents'].map((ch, i) => (
                   <div key={ch} style={{
-                    padding: '6px 10px', borderRadius: 6,
-                    background: i === 0 ? 'var(--accent-muted)' : 'transparent',
-                    color: i === 0 ? 'var(--accent)' : 'var(--text-tertiary)',
+                    padding: '6px 10px', borderRadius: 4,
+                    background: i === 0 ? '#0a66c2' : 'transparent',
+                    color: i === 0 ? '#ffffff' : 'var(--text-tertiary)',
                     fontSize: '0.7rem', fontWeight: i === 0 ? 600 : 400,
                   }}>{ch}</div>
                 ))}
                 <div style={{ height: 1, background: 'var(--border)', margin: '8px 0' }} />
                 <div style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px' }}>Team</div>
-                {[['#5b6af0','AK'],['#2ecc8a','SP'],['#f0a500','RM']].map(([c, init]) => (
+                {[['#0a66c2','AK'],['#2ecc8a','SP'],['#f0a500','RM']].map(([c, init]) => (
                   <div key={init} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px' }}>
                     <div style={{ width: 22, height: 22, borderRadius: '50%', background: c, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 700, color: '#fff' }}>{init}</div>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2ecc8a' }} />
@@ -290,10 +291,10 @@ export default function LandingPage() {
               <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, overflow: 'hidden' }}>
                 {/* AI message */}
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#5b6af0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>AK</div>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#0a66c2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>AK</div>
                   <div>
-                    <div style={{ fontSize: '0.65rem', color: '#5b6af0', fontWeight: 600, marginBottom: 3 }}>Anjali Kumar <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>Tech Lead</span></div>
-                    <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: '0 8px 8px 8px', padding: '8px 10px', fontSize: '0.72rem', color: 'var(--text-secondary)', maxWidth: 240 }}>
+                    <div style={{ fontSize: '0.65rem', color: '#0a66c2', fontWeight: 700, marginBottom: 3 }}>Anjali Kumar <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>Tech Lead</span></div>
+                    <div style={{ background: 'var(--ai-bubble, #f3f2f1)', borderRadius: '0 8px 8px 8px', padding: '7px 10px', fontSize: '0.72rem', color: 'var(--text-secondary)', maxWidth: 240 }}>
                       Hey! The auth service is throwing 500s in prod. Can you check the logs?
                     </div>
                   </div>
@@ -301,7 +302,7 @@ export default function LandingPage() {
 
                 {/* User message */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <div style={{ background: 'var(--accent-muted)', border: '1px solid var(--border)', borderRadius: '8px 0 8px 8px', padding: '8px 10px', fontSize: '0.72rem', color: 'var(--text-primary)', maxWidth: 200 }}>
+                  <div style={{ background: 'var(--user-bubble, #e8f0fb)', borderRadius: '8px 8px 0 8px', padding: '7px 10px', fontSize: '0.72rem', color: 'var(--text-primary)', maxWidth: 200 }}>
                     On it — checking CloudWatch now
                   </div>
                 </div>
@@ -310,8 +311,8 @@ export default function LandingPage() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#2ecc8a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>SP</div>
                   <div>
-                    <div style={{ fontSize: '0.65rem', color: '#2ecc8a', fontWeight: 600, marginBottom: 3 }}>Sam Park <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>Backend</span></div>
-                    <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: '0 8px 8px 8px', padding: '8px 10px', fontSize: '0.72rem', color: 'var(--text-secondary)', maxWidth: 240 }}>
+                    <div style={{ fontSize: '0.65rem', color: '#2ecc8a', fontWeight: 700, marginBottom: 3 }}>Sam Park <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>Backend</span></div>
+                    <div style={{ background: 'var(--ai-bubble, #f3f2f1)', borderRadius: '0 8px 8px 8px', padding: '7px 10px', fontSize: '0.72rem', color: 'var(--text-secondary)', maxWidth: 240 }}>
                       I see the JWT validation middleware failing. PR #142 might have introduced a regression.
                     </div>
                   </div>
@@ -319,8 +320,8 @@ export default function LandingPage() {
 
                 {/* Typing */}
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#5b6af0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>AK</div>
-                  <div style={{ display: 'flex', gap: 3, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: '0 8px 8px 8px', padding: '10px 12px' }}>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#0a66c2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>AK</div>
+                  <div style={{ display: 'flex', gap: 3, background: 'var(--ai-bubble, #f3f2f1)', borderRadius: '0 8px 8px 8px', padding: '10px 12px' }}>
                     {[0,1,2].map(i => <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--text-tertiary)', animation: `bounce-dots 1.4s ${i*0.16}s infinite` }} />)}
                   </div>
                 </div>

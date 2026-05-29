@@ -1,6 +1,9 @@
 /**
- * MessageBubble — renders one message. Uses CSS vars for full dark/light support.
- * AI messages: "**[Name]**: text" format parsed into per-member bubbles.
+ * MessageBubble — Teams-density styling.
+ * AI:   bg #f3f2f1 (light) / #2d2d2d (dark), no border, radius 0 8px 8px 8px
+ * User: bg #e8f0fb (light) / #1e3a5f (dark), no border, radius 8px 8px 0 8px, right-aligned
+ * Sender name: 13px bold in member color, timestamp 11px same line
+ * Avatar: 32px circle (50% border-radius)
  */
 
 function parseAiMessage(content) {
@@ -35,7 +38,8 @@ function parseAiMessage(content) {
 }
 
 function getColorFromName(name) {
-  const colors = ['#5b6af0','#2ecc8a','#e05555','#f0a500','#8764b8','#00b4d8','#f7630c'];
+  // Keep member colours distinct; first slot is now LinkedIn blue
+  const colors = ['#0a66c2','#2ecc8a','#e05555','#f0a500','#8764b8','#00b4d8','#f7630c'];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = ((hash << 5) - hash) + name.charCodeAt(i);
@@ -44,14 +48,17 @@ function getColorFromName(name) {
   return colors[Math.abs(hash) % colors.length];
 }
 
-function Avatar({ color, initials, size = 34 }) {
+function Avatar({ color, initials, size = 32 }) {
   return (
     <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: color, color: '#fff',
+      width: size, height: size,
+      borderRadius: '50%',      // always circular — like Teams
+      background: color,
+      color: '#fff',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size < 30 ? '0.55rem' : '0.65rem',
-      fontWeight: 700, flexShrink: 0,
+      fontSize: '0.6rem',
+      fontWeight: 700,
+      flexShrink: 0,
       minWidth: size,
     }}>
       {initials}
@@ -76,16 +83,15 @@ export default function MessageBubble({ msg, memberMap, prevMsg }) {
   // ── System message ────────────────────────────────────────
   if (isSystem) {
     return (
-      <div style={{ textAlign: 'center', margin: '10px 0', padding: '0 16px', animation: 'fadeIn 0.3s both' }}>
+      <div style={{ textAlign: 'center', margin: '8px 0', padding: '0 16px', animation: 'fadeIn 0.3s both' }}>
         <span style={{
-          fontSize: '0.72rem',
+          fontSize: '0.7rem',
           color: msg.isEmergency ? 'var(--danger)' : 'var(--text-tertiary)',
-          background: msg.isEmergency ? 'rgba(224,85,85,0.08)' : 'var(--bg-tertiary)',
-          border: `1px solid ${msg.isEmergency ? 'rgba(224,85,85,0.2)' : 'var(--border)'}`,
-          borderRadius: 20, padding: '5px 14px',
+          background: msg.isEmergency ? 'rgba(224,85,85,0.08)' : 'transparent',
+          border: msg.isEmergency ? '1px solid rgba(224,85,85,0.2)' : 'none',
+          borderRadius: 20, padding: msg.isEmergency ? '4px 12px' : '0',
           fontWeight: msg.isEmergency ? 600 : 400,
           display: 'inline-block',
-          letterSpacing: '0.01em',
         }}>
           {msg.content}
         </span>
@@ -93,42 +99,52 @@ export default function MessageBubble({ msg, memberMap, prevMsg }) {
     );
   }
 
-  // ── User message (right aligned) ──────────────────────────
+  // ── User message (right-aligned, no border) ───────────────
   if (isUser) {
     return (
       <div style={{
         display: 'flex', justifyContent: 'flex-end',
-        marginTop: sameSource ? 3 : 12,
+        marginTop: sameSource ? 2 : 10,
+        padding: '0 16px',
         animation: 'fadeIn 0.2s both',
       }}>
         <div style={{ maxWidth: '62%' }}>
+          {!sameSource && (
+            <div style={{
+              textAlign: 'right',
+              marginBottom: 2,
+              display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6,
+            }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>
+                {time}
+              </span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0a66c2' }}>
+                You
+              </span>
+            </div>
+          )}
           <div style={{
-            background: 'var(--accent-muted)',
-            border: '1px solid var(--border)',
-            borderRadius: '12px 0 12px 12px',
-            padding: '9px 14px',
-            fontSize: '0.9rem',
-            lineHeight: 1.55,
+            /* light: #e8f0fb  dark: #1e3a5f  — no border */
+            background: 'var(--user-bubble, #e8f0fb)',
+            borderRadius: '8px 8px 0 8px',
+            padding: '8px 12px',
+            fontSize: '0.875rem',
+            lineHeight: 1.5,
             color: 'var(--text-primary)',
             wordWrap: 'break-word',
           }}>
             {msg.content}
           </div>
-          {!sameSource && (
-            <div style={{ textAlign: 'right', marginTop: 3, fontSize: '0.68rem', color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>
-              {time}
-            </div>
-          )}
         </div>
       </div>
     );
   }
 
-  // ── AI message ────────────────────────────────────────────
+  // ── AI message (left-aligned, no border) ──────────────────
   if (isAI) {
     const parts = parseAiMessage(msg.content);
     return (
-      <div style={{ marginTop: sameSource ? 3 : 12, animation: 'fadeIn 0.3s both' }}>
+      <div style={{ marginTop: sameSource ? 2 : 10, padding: '0 16px', animation: 'fadeIn 0.3s both' }}>
         {parts.map((part, i) => {
           if (!part.text) return null;
           const member = part.name ? memberMap[part.name] : null;
@@ -137,51 +153,53 @@ export default function MessageBubble({ msg, memberMap, prevMsg }) {
             ? part.name.split(' ').map(n => n[0]).join('').toUpperCase()
             : 'AI';
 
-          const showAvatar = !sameSource || i > 0;
+          const showHeader = !sameSource || i > 0;
 
           return (
             <div key={i} style={{
-              display: 'flex', gap: 10, alignItems: 'flex-start',
+              display: 'flex', gap: 8, alignItems: 'flex-start',
               maxWidth: '76%',
-              marginBottom: i < parts.length - 1 ? 6 : 0,
+              marginBottom: i < parts.length - 1 ? 4 : 0,
             }}>
-              {showAvatar
+              {/* Avatar column — always 32px wide to keep bubbles aligned */}
+              {showHeader
                 ? <Avatar color={color} initials={initials} />
-                : <div style={{ width: 34, flexShrink: 0 }} />
+                : <div style={{ width: 32, flexShrink: 0 }} />
               }
 
               <div style={{ flex: 1 }}>
-                {part.name && showAvatar && (
+                {showHeader && (
                   <div style={{
-                    fontSize: '0.75rem', fontWeight: 600,
-                    color, marginBottom: 3,
+                    marginBottom: 2,
                     display: 'flex', alignItems: 'center', gap: 6,
                   }}>
-                    {part.name}
+                    <span style={{
+                      fontSize: '0.8rem', fontWeight: 700, color,
+                    }}>
+                      {part.name || 'AI Teammate'}
+                    </span>
                     {member?.role && (
-                      <span style={{ color: 'var(--text-tertiary)', fontWeight: 400, fontSize: '0.68rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontWeight: 400 }}>
                         {member.role}
                       </span>
                     )}
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontFamily: 'monospace', marginLeft: 2 }}>
+                      {time}
+                    </span>
                   </div>
                 )}
                 <div style={{
-                  background: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '0 12px 12px 12px',
-                  padding: '9px 14px',
-                  fontSize: '0.9rem',
-                  lineHeight: 1.55,
+                  /* light: #f3f2f1  dark: #2d2d2d  — no border */
+                  background: 'var(--ai-bubble, #f3f2f1)',
+                  borderRadius: '0 8px 8px 8px',
+                  padding: '8px 12px',
+                  fontSize: '0.875rem',
+                  lineHeight: 1.5,
                   color: 'var(--text-primary)',
                   wordWrap: 'break-word',
                 }}>
                   {part.text}
                 </div>
-                {i === 0 && !sameSource && (
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', marginTop: 3, fontFamily: 'monospace' }}>
-                    {time}
-                  </div>
-                )}
               </div>
             </div>
           );
@@ -192,48 +210,44 @@ export default function MessageBubble({ msg, memberMap, prevMsg }) {
 
   // ── Mentor message ────────────────────────────────────────
   if (isMentor) {
-    const mentorColor = 'var(--accent)';
+    const mentorColor = '#0a66c2';
     const mentorInitials = msg.sender
       ? msg.sender.split(' ').map(n => n[0]).join('').toUpperCase()
       : 'TL';
 
     return (
-      <div style={{ marginTop: sameSource ? 3 : 12, animation: 'fadeIn 0.25s both' }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', maxWidth: '76%' }}>
+      <div style={{ marginTop: sameSource ? 2 : 10, padding: '0 16px', animation: 'fadeIn 0.25s both' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', maxWidth: '76%' }}>
           {!sameSource
             ? <Avatar color={mentorColor} initials={mentorInitials} />
-            : <div style={{ width: 34, flexShrink: 0 }} />
+            : <div style={{ width: 32, flexShrink: 0 }} />
           }
 
           <div style={{ flex: 1 }}>
             {!sameSource && (
-              <div style={{
-                fontSize: '0.75rem', fontWeight: 600, color: mentorColor,
-                marginBottom: 3, display: 'flex', alignItems: 'center', gap: 6,
-              }}>
-                {msg.sender || 'Mentor'}
-                <span style={{ color: 'var(--text-tertiary)', fontWeight: 400, fontSize: '0.68rem' }}>
+              <div style={{ marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: mentorColor }}>
+                  {msg.sender || 'Mentor'}
+                </span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontWeight: 400 }}>
                   Team Lead
+                </span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontFamily: 'monospace', marginLeft: 2 }}>
+                  {time}
                 </span>
               </div>
             )}
             <div style={{
-              background: 'var(--accent-muted)',
-              border: '1px solid var(--border)',
-              borderRadius: '0 12px 12px 12px',
-              padding: '9px 14px',
-              fontSize: '0.9rem',
-              lineHeight: 1.55,
+              background: 'var(--ai-bubble, #f3f2f1)',
+              borderRadius: '0 8px 8px 8px',
+              padding: '8px 12px',
+              fontSize: '0.875rem',
+              lineHeight: 1.5,
               color: 'var(--text-primary)',
               wordWrap: 'break-word',
             }}>
               {msg.content}
             </div>
-            {!sameSource && (
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', marginTop: 3, fontFamily: 'monospace' }}>
-                {time}
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-# WorkPod 🚀
+# WorkPod 
 
 An AI-powered workplace simulation platform. Practice real job scenarios with AI teammates, handle live emergencies, collaborate with other humans in multiplayer, and get a scored performance report powered by Gemini.
 
@@ -6,16 +6,16 @@ An AI-powered workplace simulation platform. Practice real job scenarios with AI
 
 ## Features
 
-- 🎭 **3 Roles** — Software Engineer, HR Manager, Product Manager
-- 🤖 **AI Teammates** — Gemini-powered personas that stay fully in character
-- 👥 **Multiplayer** — join a room with real humans + AI, or go solo with all AI
-- 📋 **Task Artifacts** — write and submit work directly in the sim (PRDs, code reviews, etc.)
-- 🚨 **Emergency Scenarios** — triggered at 60% session time, require urgent team response
-- 🧑‍🏫 **Mentor Channel** — separate private channel to ask your AI mentor questions
-- 🎤 **Voice Input** — speak your messages (Chrome Web Speech API)
-- 📊 **AI Performance Report** — scored on Communication, Task Management & Pressure Handling
-- 🗺️ **30-Day Learning Roadmap** — personalized resource links generated after each session
-- 🔐 **Guest + Auth** — play instantly as a guest, sign in to save history
+- **3 Roles** — Software Engineer, HR Manager, Product Manager
+- **AI Teammates** — Gemini-powered personas that stay fully in character
+- **Multiplayer** — join a room with real humans + AI, or go solo with all AI
+- **Task Artifacts** — write and submit work directly in the sim (PRDs, code reviews, etc.)
+- **Emergency Scenarios** — triggered at 60% session time, require urgent team response
+- **Mentor Channel** — separate private channel to ask your AI mentor questions
+- **Voice Input** — speak your messages (Chrome Web Speech API)
+- **AI Performance Report** — scored on Communication, Task Management & Pressure Handling
+- **30-Day Learning Roadmap** — personalized resource links generated after each session
+- **Guest + Auth** — play instantly as a guest, sign in to save history
 
 ---
 

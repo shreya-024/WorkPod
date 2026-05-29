@@ -41,6 +41,7 @@ function getOrCreateRoom(role, teamType) {
     mentorHistory: [],
     participants: [],
     messageLog: [],       // full ordered chat log for replay
+    whiteboardElements: [],  // collaborative whiteboard state
     scenario,
     systemPrompt: scenario.systemPrompt,
     emergencyPrompt: scenario.emergencyPrompt,
@@ -336,6 +337,45 @@ export function initRoomManager(io) {
         humanParticipants: currentRoom.participants.filter(p => p.isHuman).length,
       };
       io.to(currentRoom.code).emit('team-composition-update', teamInfo);
+    });
+
+    // ─── WHITEBOARD JOIN ────────────────────────────────────────────────────
+    socket.on('whiteboard-join', ({ roomCode }) => {
+      if (!roomCode) return;
+      const room = rooms.get(roomCode);
+      if (!room) return;
+
+      socket.join(roomCode);
+
+      // Send existing canvas state to new joiner
+      if (room.whiteboardElements && room.whiteboardElements.length > 0) {
+        socket.emit('whiteboard-full-state', {
+          elements: room.whiteboardElements,
+        });
+      }
+    });
+
+    // ─── WHITEBOARD UPDATE ──────────────────────────────────────────────────
+    socket.on('whiteboard-update', ({ roomCode, elements }) => {
+      const room = rooms.get(roomCode);
+      if (!room) return;
+
+      // Save latest state server-side
+      room.whiteboardElements = elements;
+
+      // Broadcast to everyone EXCEPT sender
+      socket.to(roomCode).emit('whiteboard-update', { elements });
+    });
+
+    // ─── WHITEBOARD SYNC REQUEST ────────────────────────────────────────────
+    socket.on('whiteboard-sync-request', ({ roomCode }) => {
+      const room = rooms.get(roomCode);
+      if (!room) return;
+
+      // Send current whiteboard state to the requesting user
+      if (room.whiteboardElements && room.whiteboardElements.length > 0) {
+        socket.emit('whiteboard-update', room.whiteboardElements);
+      }
     });
 
     // ─── DISCONNECT ─────────────────────────────────────────────────────────

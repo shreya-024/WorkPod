@@ -12,6 +12,7 @@ import TypingIndicator from '../components/TypingIndicator.jsx';
 import SimTopBar from '../components/SimTopBar.jsx';
 import TeamDisplay from '../components/TeamDisplay.jsx';
 import api from '../lib/api.js';
+import Whiteboard from '../components/Whiteboard.jsx';
 
 const SendIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -108,11 +109,12 @@ export default function SimulationPage() {
 
   useEffect(() => { setEndSessionFn(endSession); }, [endSession]);
 
-  const handleSend = () => {
-    const text = input.trim();
-    if (!text || aiTyping) return;
-    sendMessage(text, chatChannel);
-    setInput('');
+  const handleSend = (text) => {
+    const msg = (text || input).trim();
+    if (!msg || aiTyping) return;
+    const channel = chatChannel === 'whiteboard' ? 'team' : chatChannel;
+    sendMessage(msg, channel);
+    if (!text) setInput('');
     inputRef.current?.focus();
   };
 
@@ -142,25 +144,26 @@ export default function SimulationPage() {
     setSelectedTask(null);
   };
 
+  // Quick send from ChatWindow starter buttons
+  const handleQuickSend = (text) => {
+    if (!text || aiTyping) return;
+    const channel = chatChannel === 'whiteboard' ? 'team' : chatChannel;
+    sendMessage(text, channel);
+  };
+
   if (!scenario) return null;
 
-  // Inject per-theme bubble colours as CSS custom properties
-  // ai-bubble: #f3f2f1 light / #2d2d2d dark
-  // user-bubble: #e8f0fb light / #1e3a5f dark
-  const bubbleStyle = `
-    :root, html[data-theme="dark"] {
-      --ai-bubble: #2d2d2d;
-      --user-bubble: #1e3a5f;
-    }
-    html[data-theme="light"] {
-      --ai-bubble: #f3f2f1;
-      --user-bubble: #e8f0fb;
-    }
-  `;
+  const isWhiteboard = chatChannel === 'whiteboard';
+
+  // Chat header label
+  const channelLabel = isWhiteboard
+    ? 'whiteboard'
+    : chatChannel === 'mentor'
+      ? (scenario.mentorName || 'Team Lead')
+      : 'team-general';
 
   return (
     <>
-    <style>{bubbleStyle}</style>
     <div className="sim-layout">
       {/* TOP BAR */}
       <SimTopBar
@@ -171,6 +174,7 @@ export default function SimulationPage() {
         onEndSession={() => setShowEndConfirm(true)}
         onEmergency={handleEmergency}
         showEmergencyBtn={showEmergencyBtn}
+        role={role}
       />
 
       {/* CONTENT */}
@@ -183,115 +187,152 @@ export default function SimulationPage() {
           onTaskClick={(id, title) => setSelectedTask({ id, title })}
         />
 
-        {/* Main chat */}
+        {/* Main chat / whiteboard */}
         <main className="sim-main">
           {isEmergencyActive && (
             <EmergencyBanner label={scenario.emergencyLabel} />
           )}
 
-          <div style={{
-            flex: 1, overflow: 'hidden', minHeight: 0,
-            display: 'flex', flexDirection: 'column',
-          }}>
-            {/* Chat header */}
+          {isWhiteboard ? (
+            /* WHITEBOARD view */
             <div style={{
-              padding: '12px 20px',
-              borderBottom: '1px solid var(--border)',
-              background: 'var(--bg-secondary)',
-              display: 'flex', alignItems: 'center', gap: 8,
-              flexShrink: 0,
+              flex: 1, overflow: 'hidden', minHeight: 0,
+              display: 'flex', flexDirection: 'column'
             }}>
-              <span style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>#</span>
-              <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                {chatChannel === 'mentor' ? (scenario.mentorName || 'Team Lead') : 'team-general'}
-              </span>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>
-                {scenario.members?.length} members
-              </span>
-            </div>
-
-            <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-              <ChatWindow messages={messages.filter(m =>
-                chatChannel === 'mentor'
-                  ? (m.senderType === 'mentor' || m.senderType === 'user' || m.senderType === 'system')
-                  : (m.senderType !== 'mentor' || m.senderType === 'system')
-              )} scenario={scenario} />
-            </div>
-          </div>
-
-          {/* Typing indicator */}
-          {aiTyping && (
-            <div style={{ padding: '6px 20px', flexShrink: 0 }}>
-              <TypingIndicator members={scenario.members} />
-            </div>
-          )}
-
-          {/* Input — flat Teams style: border-top container, input bg muted, no glow */}
-          <div style={{
-            padding: '8px 12px 10px',
-            borderTop: '1px solid var(--border)',
-            background: 'var(--bg-secondary)',
-            flexShrink: 0,
-          }}>
-            <div style={{
-              display: 'flex', gap: 6, alignItems: 'flex-end',
-            }}>
-              <textarea
-                ref={inputRef}
-                id="chat-input"
-                placeholder={chatChannel === 'mentor'
-                  ? `Ask ${scenario.mentorName || 'Team Lead'} a question...`
-                  : `Message #team-general...`}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                rows={1}
-                style={{
-                  flex: 1,
-                  background: 'var(--bg-tertiary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
-                  outline: 'none',
-                  color: 'var(--text-primary)',
-                  fontFamily: 'var(--font-base)',
-                  fontSize: '0.875rem',
-                  resize: 'none',
-                  lineHeight: 1.5,
-                  padding: '7px 10px',
-                  maxHeight: '5rem',
-                  overflowY: 'auto',
-                  transition: 'border-color 0.15s',
-                }}
-                onFocus={e => { e.target.style.borderColor = '#0a66c2'; }}
-                onBlur={e => { e.target.style.borderColor = 'var(--border)'; }}
-                onInput={e => {
-                  e.target.style.height = 'auto';
-                  e.target.style.height = Math.min(e.target.scrollHeight, 80) + 'px';
-                }}
-              />
-              <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0, paddingBottom: 1 }}>
-                <VoiceBtn onResult={handleVoiceResult} />
-                <button
-                  id="send-message-btn"
-                  onClick={handleSend}
-                  disabled={!input.trim() || aiTyping}
-                  style={{
-                    width: 32, height: 32, borderRadius: 4, border: 'none',
-                    background: input.trim() && !aiTyping ? '#0a66c2' : 'var(--bg-tertiary)',
-                    color: input.trim() && !aiTyping ? '#fff' : 'var(--text-tertiary)',
-                    cursor: input.trim() && !aiTyping ? 'pointer' : 'not-allowed',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.15s', flexShrink: 0,
-                  }}
-                >
-                  <SendIcon />
-                </button>
+              <div style={{
+                padding: '12px 20px',
+                borderBottom: '1px solid var(--border)',
+                background: 'var(--bg-secondary)',
+                display: 'flex', alignItems: 'center', gap: 8,
+                flexShrink: 0,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                  <path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/>
+                </svg>
+                <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                  whiteboard
+                </span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>
+                  Collaborative drawing
+                </span>
+              </div>
+              <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                <Whiteboard />
               </div>
             </div>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', marginTop: 4, paddingLeft: 2 }}>
-              Enter to send · Shift+Enter for newline · Chrome for voice
-            </p>
-          </div>
+          ) : (
+            /* CHAT view */
+            <>
+              <div style={{
+                flex: 1, overflow: 'hidden', minHeight: 0,
+                display: 'flex', flexDirection: 'column',
+              }}>
+                {/* Chat header */}
+                <div style={{
+                  padding: '12px 20px',
+                  borderBottom: '1px solid var(--border)',
+                  background: 'var(--bg-secondary)',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  flexShrink: 0,
+                }}>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>#</span>
+                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                    {channelLabel}
+                  </span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>
+                    {scenario.members?.length} members
+                  </span>
+                </div>
+
+                <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+                  <ChatWindow
+                    messages={messages.filter(m =>
+                      chatChannel === 'mentor'
+                        ? (m.senderType === 'mentor' || m.senderType === 'user' || m.senderType === 'system')
+                        : (m.senderType !== 'mentor' || m.senderType === 'system')
+                    )}
+                    scenario={scenario}
+                    onQuickSend={handleQuickSend}
+                  />
+                </div>
+              </div>
+
+              {/* Typing indicator */}
+              {aiTyping && (
+                <div style={{ padding: '6px 20px', flexShrink: 0 }}>
+                  <TypingIndicator members={scenario.members} />
+                </div>
+              )}
+
+              {/* Input bar — Teams style */}
+              <div style={{
+                padding: '8px 12px 10px',
+                borderTop: '1px solid var(--border)',
+                background: 'var(--bg-secondary)',
+                flexShrink: 0,
+              }}>
+                <div style={{
+                  display: 'flex', gap: 6, alignItems: 'flex-end',
+                }}>
+                  <textarea
+                    ref={inputRef}
+                    id="chat-input"
+                    placeholder={chatChannel === 'mentor'
+                      ? `Ask ${scenario.mentorName || 'Team Lead'} a question...`
+                      : `Message #team-general...`}
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                    style={{
+                      flex: 1,
+                      background: 'var(--input-bg, var(--bg-tertiary))',
+                      border: '1px solid var(--input-border, var(--border))',
+                      borderRadius: 8,
+                      outline: 'none',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-base)',
+                      fontSize: '0.875rem',
+                      resize: 'none',
+                      lineHeight: 1.5,
+                      padding: '7px 12px',
+                      maxHeight: '5rem',
+                      overflowY: 'auto',
+                      transition: 'border-color 0.15s',
+                    }}
+                    onFocus={e => { e.target.style.borderColor = '#0a66c2'; }}
+                    onBlur={e => { e.target.style.borderColor = 'var(--input-border, var(--border))'; }}
+                    onInput={e => {
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 80) + 'px';
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0, paddingBottom: 1 }}>
+                    <VoiceBtn onResult={handleVoiceResult} />
+                    <button
+                      id="send-message-btn"
+                      onClick={() => handleSend()}
+                      disabled={!input.trim() || aiTyping}
+                      style={{
+                        width: 32, height: 32, borderRadius: 6, border: 'none',
+                        background: input.trim() && !aiTyping ? '#0a66c2' : 'var(--bg-tertiary)',
+                        color: input.trim() && !aiTyping ? '#fff' : 'var(--text-tertiary)',
+                        cursor: input.trim() && !aiTyping ? 'pointer' : 'not-allowed',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.15s', flexShrink: 0,
+                      }}
+                    >
+                      <SendIcon />
+                    </button>
+                  </div>
+                </div>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', marginTop: 4, paddingLeft: 2 }}>
+                  Enter to send · Shift+Enter for newline · Chrome for voice
+                </p>
+              </div>
+            </>
+          )}
         </main>
       </div>
 

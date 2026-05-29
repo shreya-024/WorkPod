@@ -1,8 +1,9 @@
 /**
- * MessageBubble — Teams-density styling.
- * AI:   bg #f3f2f1 (light) / #2d2d2d (dark), no border, radius 0 8px 8px 8px
- * User: bg #e8f0fb (light) / #1e3a5f (dark), no border, radius 8px 8px 0 8px, right-aligned
- * Sender name: 13px bold in member color, timestamp 11px same line
+ * MessageBubble — Teams-style messaging.
+ * AI:   transparent background (no bubble), just padding — like real Teams
+ * User: bg var(--user-bubble) #e8e0f7 (light) / #3d3b72 (dark), border-radius 18px
+ * Sender name: 14px bold in member color
+ * Timestamp: 11px inline after name, opacity 0.6
  * Avatar: 32px circle (50% border-radius)
  */
 
@@ -115,19 +116,18 @@ export default function MessageBubble({ msg, memberMap, prevMsg }) {
               marginBottom: 2,
               display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6,
             }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'monospace', opacity: 0.6 }}>
                 {time}
               </span>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0a66c2' }}>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#0a66c2' }}>
                 You
               </span>
             </div>
           )}
           <div style={{
-            /* light: #e8f0fb  dark: #1e3a5f  — no border */
-            background: 'var(--user-bubble, #e8f0fb)',
-            borderRadius: '8px 8px 0 8px',
-            padding: '8px 12px',
+            background: 'var(--user-bubble, #e8e0f7)',
+            borderRadius: 18,
+            padding: '8px 14px',
             fontSize: '0.875rem',
             lineHeight: 1.5,
             color: 'var(--text-primary)',
@@ -174,25 +174,25 @@ export default function MessageBubble({ msg, memberMap, prevMsg }) {
                     display: 'flex', alignItems: 'center', gap: 6,
                   }}>
                     <span style={{
-                      fontSize: '0.8rem', fontWeight: 700, color,
+                      fontSize: '14px', fontWeight: 700, color,
                     }}>
                       {part.name || 'AI Teammate'}
                     </span>
                     {member?.role && (
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontWeight: 400 }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 400 }}>
                         {member.role}
                       </span>
                     )}
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontFamily: 'monospace', marginLeft: 2 }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'monospace', opacity: 0.6 }}>
                       {time}
                     </span>
                   </div>
                 )}
                 <div style={{
-                  /* light: #f3f2f1  dark: #2d2d2d  — no border */
-                  background: 'var(--ai-bubble, #f3f2f1)',
-                  borderRadius: '0 8px 8px 8px',
-                  padding: '8px 12px',
+                  /* Teams-style: NO bubble for AI messages, just padding */
+                  background: 'transparent',
+                  borderRadius: 0,
+                  padding: '2px 0',
                   fontSize: '0.875rem',
                   lineHeight: 1.5,
                   color: 'var(--text-primary)',
@@ -226,21 +226,22 @@ export default function MessageBubble({ msg, memberMap, prevMsg }) {
           <div style={{ flex: 1 }}>
             {!sameSource && (
               <div style={{ marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: mentorColor }}>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: mentorColor }}>
                   {msg.sender || 'Mentor'}
                 </span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontWeight: 400 }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 400 }}>
                   Team Lead
                 </span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', fontFamily: 'monospace', marginLeft: 2 }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'monospace', opacity: 0.6 }}>
                   {time}
                 </span>
               </div>
             )}
             <div style={{
-              background: 'var(--ai-bubble, #f3f2f1)',
-              borderRadius: '0 8px 8px 8px',
-              padding: '8px 12px',
+              /* Teams-style: transparent bg for mentor messages too */
+              background: 'transparent',
+              borderRadius: 0,
+              padding: '2px 0',
               fontSize: '0.875rem',
               lineHeight: 1.5,
               color: 'var(--text-primary)',

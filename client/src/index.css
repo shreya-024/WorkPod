@@ -24,6 +24,21 @@ html[data-theme="dark"] {
   --warning:       #f0a500;
   --danger:        #e05555;
 
+  /* Sidebar — Teams dark */
+  --sidebar-bg:          #2b2d31;
+  --sidebar-text:        #dcddde;
+  --sidebar-text-active: #ffffff;
+  --channel-active-bg:   rgba(255,255,255,0.10);
+  --channel-hover-bg:    rgba(255,255,255,0.06);
+
+  /* Chat area */
+  --chat-bg:     #313338;
+  --input-bg:    #383a40;
+  --input-border:#555;
+
+  /* Bubble overrides */
+  --user-bubble:  #3d3b72;
+
   /* Legacy aliases */
   --surface-base:   #0a0a0f;
   --surface-raised: #111118;
@@ -62,6 +77,21 @@ html[data-theme="light"] {
   --success:       #057642;
   --warning:       #b07800;
   --danger:        #cc1016;
+
+  /* Sidebar — Teams light */
+  --sidebar-bg:          #f3f2f1;
+  --sidebar-text:        #242424;
+  --sidebar-text-active: #1c1c1c;
+  --channel-active-bg:   rgba(0,0,0,0.06);
+  --channel-hover-bg:    rgba(0,0,0,0.04);
+
+  /* Chat area */
+  --chat-bg:     #ffffff;
+  --input-bg:    #ffffff;
+  --input-border:#ccc;
+
+  /* Bubble overrides */
+  --user-bubble:  #e8e0f7;
 
   /* Legacy aliases */
   --surface-base:   #ffffff;

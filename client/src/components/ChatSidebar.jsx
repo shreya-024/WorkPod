@@ -19,64 +19,65 @@ const UserGroupIcon = () => (
     <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
   </svg>
 );
-const GraduationIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+const PenToolIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+    <path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/>
   </svg>
 );
 
-/* ── Section label — tight, Teams-style ──── */
+/* ── Section label — 11px, uppercase, letter-spacing 1px, opacity 0.5 ──── */
 const SectionLabel = ({ children }) => (
   <div style={{
-    fontSize: '0.68rem',
-    fontWeight: 700,
+    fontSize: '11px',
+    fontWeight: 600,
     textTransform: 'uppercase',
-    letterSpacing: '0.08em',
-    color: 'var(--text-tertiary)',
-    padding: '10px 10px 4px',
-    display: 'flex', alignItems: 'center', gap: 4,
+    letterSpacing: '1px',
+    color: 'var(--sidebar-text)',
+    opacity: 0.5,
+    padding: '12px 14px 6px',
+    display: 'flex', alignItems: 'center', gap: 5,
+    userSelect: 'none',
   }}>
     {children}
   </div>
 );
 
-/* ── Channel row — 32px height, Teams density ──── */
-const ChannelBtn = ({ label, active, onClick }) => (
+/* ── Channel row — Teams-style: left border active, subtle hover ──── */
+const ChannelBtn = ({ label, active, onClick, icon }) => (
   <button
     onClick={onClick}
     style={{
       width: '100%',
-      height: 32,
-      padding: '0 10px',
-      background: active ? 'var(--accent)' : 'transparent',
+      height: 34,
+      padding: '0 14px',
+      background: active ? 'var(--channel-active-bg)' : 'transparent',
       border: 'none',
-      borderRadius: 4,
-      color: active ? '#ffffff' : 'var(--text-secondary)',
+      borderLeft: active ? '3px solid #0a66c2' : '3px solid transparent',
+      borderRadius: 0,
+      color: active ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)',
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
-      gap: 6,
-      fontSize: '0.75rem',
+      gap: 7,
+      fontSize: '13px',
       fontWeight: active ? 600 : 400,
-      transition: 'background 0.12s, color 0.12s',
+      transition: 'background 0.12s, color 0.12s, border-color 0.12s',
       textAlign: 'left',
     }}
     onMouseEnter={e => {
       if (!active) {
-        e.currentTarget.style.background = 'var(--bg-tertiary)';
-        e.currentTarget.style.color = 'var(--text-primary)';
+        e.currentTarget.style.background = 'var(--channel-hover-bg)';
       }
     }}
     onMouseLeave={e => {
       if (!active) {
         e.currentTarget.style.background = 'transparent';
-        e.currentTarget.style.color = 'var(--text-secondary)';
       }
     }}
   >
-    <span style={{ color: active ? '#ffffff' : 'var(--text-tertiary)', flexShrink: 0, opacity: 0.8 }}>
-      <HashIcon />
+    <span style={{ color: active ? '#0a66c2' : 'var(--sidebar-text)', opacity: active ? 1 : 0.6, flexShrink: 0, display: 'flex' }}>
+      {icon || <HashIcon />}
     </span>
     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
       {label}
@@ -87,15 +88,20 @@ const ChannelBtn = ({ label, active, onClick }) => (
 export default function ChatSidebar({ scenario, chatChannel, onChannelChange, onTaskClick }) {
   const { completedTasks, roomParticipants, user, guestId, timerSeconds } = useSimStore();
   const teamMembers = scenario?.members || [];
+  const mentorName = scenario?.mentorName || 'Team Lead';
   const myId = user?.id || guestId;
 
   const elapsed = 2700 - timerSeconds;
   const percentElapsed = Math.round((elapsed / 2700) * 100);
 
+  // Mentor avatar color — use first member's color or accent
+  const mentorColor = '#0a66c2';
+  const mentorInitials = mentorName.split(' ').map(n => n[0]).join('').toUpperCase();
+
   return (
     <aside style={{
       width: 260,
-      background: 'var(--bg-secondary)',
+      background: 'var(--sidebar-bg)',
       borderRight: '1px solid var(--border)',
       display: 'flex',
       flexDirection: 'column',
@@ -103,84 +109,52 @@ export default function ChatSidebar({ scenario, chatChannel, onChannelChange, on
       overflow: 'hidden',
       flexShrink: 0,
     }}>
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 16 }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 8 }}>
 
         {/* 1. CHANNELS */}
-        <SectionLabel><HashIcon /> Channels</SectionLabel>
-        <div style={{ padding: '0 6px 4px' }}>
-          <ChannelBtn label="team-general" active={chatChannel === 'team'}   onClick={() => onChannelChange('team')} />
-          <ChannelBtn label="standup"      active={false}                    onClick={() => onChannelChange('team')} />
-          {/* Mentor — clickable row as channel */}
-          <button
-            onClick={() => onChannelChange('mentor')}
-            style={{
-              height: 32, padding: '0 10px', borderRadius: 4,
-              background: chatChannel === 'mentor' ? 'var(--accent)' : 'transparent',
-              border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6,
-              width: '100%', textAlign: 'left',
-              color: chatChannel === 'mentor' ? '#ffffff' : 'var(--text-secondary)',
-              fontSize: '0.75rem', fontWeight: chatChannel === 'mentor' ? 600 : 400,
-              transition: 'background 0.12s, color 0.12s',
-            }}
-            onMouseEnter={e => {
-              if (chatChannel !== 'mentor') {
-                e.currentTarget.style.background = 'var(--bg-tertiary)';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }
-            }}
-            onMouseLeave={e => {
-              if (chatChannel !== 'mentor') {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }
-            }}
-          >
-            <span style={{ color: chatChannel === 'mentor' ? '#ffffff' : 'var(--text-tertiary)', flexShrink: 0, opacity: 0.8 }}>
-              <GraduationIcon />
-            </span>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              mentor
-            </span>
-          </button>
-          <ChannelBtn label="incidents"    active={false}                    onClick={() => onChannelChange('team')} />
+        <SectionLabel>Channels</SectionLabel>
+        <div style={{ padding: '0 0 4px' }}>
+          <ChannelBtn label="team-general" active={chatChannel === 'team'}       onClick={() => onChannelChange('team')} />
+          <ChannelBtn label="standup"      active={false}                        onClick={() => onChannelChange('team')} />
+          <ChannelBtn label="whiteboard"   active={chatChannel === 'whiteboard'} onClick={() => onChannelChange('whiteboard')} icon={<PenToolIcon />} />
+          <ChannelBtn label="incidents"    active={false}                        onClick={() => onChannelChange('team')} />
         </div>
 
-        <div style={{ height: 1, background: 'var(--border)', margin: '6px 10px' }} />
+        <div style={{ height: 1, background: 'var(--border)', margin: '4px 14px' }} />
 
-        {/* 2. TEAM MEMBERS (AI Only) */}
-        <SectionLabel><UserGroupIcon /> Team</SectionLabel>
-        <div style={{ padding: '0 6px 4px', display: 'flex', flexDirection: 'column' }}>
+        {/* 2. TEAM (AI Members) */}
+        <SectionLabel>Team</SectionLabel>
+        <div style={{ padding: '0 8px 4px', display: 'flex', flexDirection: 'column' }}>
           {teamMembers.map(member => (
             <div key={member.name} style={{
-              height: 36,
-              padding: '0 10px',
-              borderRadius: 4,
+              height: 40,
+              padding: '0 8px',
+              borderRadius: 6,
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
+              gap: 10,
             }}>
               <div style={{
                 width: 32, height: 32, borderRadius: '50%',
                 background: member.color || 'var(--accent)',
                 color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.65rem', fontWeight: 700, flexShrink: 0,
+                fontSize: '0.6rem', fontWeight: 700, flexShrink: 0,
               }}>
                 {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
               </div>
 
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
                   fontSize: '13px', fontWeight: 500,
-                  color: 'var(--text-primary)',
+                  color: 'var(--sidebar-text-active)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   lineHeight: 1.2,
                 }}>
                   {member.name}
                 </div>
                 <div style={{
-                  fontSize: '11px', color: 'var(--text-secondary)',
+                  fontSize: '11px', color: 'var(--sidebar-text)', opacity: 0.6,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   lineHeight: 1.2,
                 }}>
@@ -189,57 +163,126 @@ export default function ChatSidebar({ scenario, chatChannel, onChannelChange, on
               </div>
 
               <div style={{
-                width: 6, height: 6, borderRadius: '50%',
+                width: 7, height: 7, borderRadius: '50%',
                 background: 'var(--success)', flexShrink: 0,
               }} />
             </div>
           ))}
+
+          {/* MENTOR — rendered as special person row under TEAM */}
+          <button
+            onClick={() => onChannelChange('mentor')}
+            style={{
+              height: 40,
+              padding: '0 8px',
+              borderRadius: 6,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              width: '100%', border: 'none', textAlign: 'left',
+              background: chatChannel === 'mentor' ? 'var(--channel-active-bg)' : 'transparent',
+              cursor: 'pointer',
+              transition: 'background 0.12s',
+            }}
+            onMouseEnter={e => { if (chatChannel !== 'mentor') e.currentTarget.style.background = 'var(--channel-hover-bg)'; }}
+            onMouseLeave={e => { if (chatChannel !== 'mentor') e.currentTarget.style.background = 'transparent'; }}
+          >
+            {/* Avatar with "M" badge */}
+            <div style={{ position: 'relative', width: 32, height: 32, flexShrink: 0 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: mentorColor,
+                color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.6rem', fontWeight: 700,
+              }}>
+                {mentorInitials}
+              </div>
+              {/* Star/M badge */}
+              <div style={{
+                position: 'absolute', bottom: -2, right: -2,
+                width: 14, height: 14, borderRadius: '50%',
+                background: '#f0a500',
+                color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '8px', fontWeight: 800,
+                border: '2px solid var(--sidebar-bg)',
+                lineHeight: 1,
+              }}>
+                M
+              </div>
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: '13px', fontWeight: 500,
+                color: 'var(--sidebar-text-active)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                lineHeight: 1.2,
+                fontStyle: 'italic',
+              }}>
+                {mentorName} · Mentor
+              </div>
+              <div style={{
+                fontSize: '11px', color: 'var(--sidebar-text)', opacity: 0.6,
+                lineHeight: 1.2,
+              }}>
+                Team Lead
+              </div>
+            </div>
+
+            {/* Accent dot instead of green */}
+            <div style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: '#0a66c2', flexShrink: 0,
+            }} />
+          </button>
         </div>
 
         {/* 3. IN THIS ROOM (Humans Only) */}
         {roomParticipants.length > 0 && (
           <>
-            <div style={{ height: 1, background: 'var(--border)', margin: '6px 10px' }} />
-            <SectionLabel><UserGroupIcon /> In This Room</SectionLabel>
-            <div style={{ padding: '0 6px 4px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ height: 1, background: 'var(--border)', margin: '4px 14px' }} />
+            <SectionLabel>In This Room</SectionLabel>
+            <div style={{ padding: '0 8px 4px', display: 'flex', flexDirection: 'column' }}>
               {roomParticipants.map((p, i) => (
                 <div key={p.userId || i} style={{
-                  height: 36,
-                  padding: '0 10px',
-                  borderRadius: 4,
+                  height: 40,
+                  padding: '0 8px',
+                  borderRadius: 6,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
+                  gap: 10,
                 }}>
                   <div style={{
                     width: 32, height: 32, borderRadius: '50%',
-                    background: p.userId === myId ? 'var(--accent)' : 'var(--bg-tertiary)',
+                    background: p.userId === myId ? '#0a66c2' : 'var(--bg-tertiary)',
                     border: p.userId === myId ? 'none' : '1px solid var(--border)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.65rem', fontWeight: 700,
-                    color: p.userId === myId ? '#fff' : 'var(--text-secondary)',
+                    fontSize: '0.6rem', fontWeight: 700,
+                    color: p.userId === myId ? '#fff' : 'var(--sidebar-text)',
                     flexShrink: 0,
                   }}>
-                    {(p.userName || 'U').slice(0, 1).toUpperCase()}
+                    {(p.userName || 'U').slice(0, 2).toUpperCase()}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
                       fontSize: '13px', fontWeight: 500,
-                      color: 'var(--text-primary)',
+                      color: 'var(--sidebar-text-active)',
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       lineHeight: 1.2,
                     }}>
-                      {p.userName} {p.userId === myId && <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(you)</span>}
+                      {p.userName} {p.userId === myId && <span style={{ opacity: 0.5, fontWeight: 400 }}>(you)</span>}
                     </div>
                     <div style={{
-                      fontSize: '11px', color: 'var(--text-secondary)',
+                      fontSize: '11px', color: 'var(--sidebar-text)', opacity: 0.6,
                       lineHeight: 1.2,
                     }}>
                       Participant
                     </div>
                   </div>
                   <div style={{
-                    width: 6, height: 6, borderRadius: '50%',
+                    width: 7, height: 7, borderRadius: '50%',
                     background: 'var(--success)', flexShrink: 0,
                   }} />
                 </div>
@@ -248,14 +291,14 @@ export default function ChatSidebar({ scenario, chatChannel, onChannelChange, on
           </>
         )}
 
-        <div style={{ height: 1, background: 'var(--border)', margin: '6px 10px' }} />
+        <div style={{ height: 1, background: 'var(--border)', margin: '4px 14px' }} />
 
         {/* 4. TASKS */}
         <SectionLabel>
           <CheckSquareIcon />
           Tasks · {completedTasks.size}/{scenario?.tasks?.length || 0} done
         </SectionLabel>
-        <div style={{ padding: '0 6px 10px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '0 8px 10px', display: 'flex', flexDirection: 'column' }}>
           {(scenario?.tasks || []).map((task, idx, arr) => {
             const done = completedTasks.has(task.id);
             const isLast = idx === arr.length - 1;
@@ -272,9 +315,9 @@ export default function ChatSidebar({ scenario, chatChannel, onChannelChange, on
                   padding: '7px 8px',
                   cursor: 'pointer', textAlign: 'left',
                   transition: 'background 0.12s', width: '100%',
-                  opacity: done ? 0.6 : 1,
+                  opacity: done ? 0.5 : 1,
                 }}
-                onMouseEnter={e => { if (!done) e.currentTarget.style.background = 'var(--bg-tertiary)'; }}
+                onMouseEnter={e => { if (!done) e.currentTarget.style.background = 'var(--channel-hover-bg)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
               >
                 <div style={{
@@ -293,10 +336,11 @@ export default function ChatSidebar({ scenario, chatChannel, onChannelChange, on
                 <span style={{
                   fontSize: '13px',
                   fontWeight: 500,
-                  color: done ? 'var(--text-tertiary)' : 'var(--text-primary)',
+                  color: done ? 'var(--sidebar-text)' : 'var(--sidebar-text-active)',
                   textDecoration: done ? 'line-through' : 'none',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   flex: 1,
+                  opacity: done ? 0.6 : 1,
                 }}>
                   {task.title}
                 </span>
@@ -313,11 +357,11 @@ export default function ChatSidebar({ scenario, chatChannel, onChannelChange, on
         </div>
       </div>
 
-      {/* 5. SESSION PROGRESS */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
+      {/* 5. SESSION PROGRESS — pinned to bottom */}
+      <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border)', background: 'var(--sidebar-bg)', flexShrink: 0 }}>
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: 6, fontWeight: 600,
+          fontSize: '11px', color: 'var(--sidebar-text)', opacity: 0.7, marginBottom: 5,
         }}>
           <span>{completedTasks.size}/{scenario?.tasks?.length || 0} tasks</span>
           <span>{percentElapsed}% complete</span>
@@ -325,7 +369,7 @@ export default function ChatSidebar({ scenario, chatChannel, onChannelChange, on
         <div style={{ height: 3, background: 'var(--bg-tertiary)', borderRadius: 99, overflow: 'hidden' }}>
           <div style={{
             width: `${percentElapsed}%`, height: '100%',
-            background: 'var(--accent)',
+            background: '#0a66c2',
             borderRadius: 99, transition: 'width 1s linear',
           }} />
         </div>

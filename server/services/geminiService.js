@@ -94,25 +94,38 @@ export function getGeminiClient() {
 }
 
 /**
- * Helper: detect whether an error is a 429 / quota-exceeded error.
+ * Helper: detect whether an error is retryable (429 quota OR 503 overload).
  */
-function isQuotaError(err) {
+function isRetryableError(err) {
   if (!err) return false;
   const status = err.status || err.httpStatusCode || err?.errorDetails?.[0]?.httpStatusCode;
-  if (status === 429) return true;
+  if (status === 429 || status === 503) return true;
   const msg = (err.message || '').toLowerCase();
-  return msg.includes('quota') || msg.includes('rate limit') || msg.includes('resource exhausted');
+  return (
+    msg.includes('quota') ||
+    msg.includes('rate limit') ||
+    msg.includes('resource exhausted') ||
+    msg.includes('service unavailable') ||
+    msg.includes('high demand') ||
+    msg.includes('try again') ||
+    msg.includes('overloaded')
+  );
 }
 
+/** Small sleep helper for backoff delays. */
+const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
 /**
- * Execute a Gemini call with automatic key rotation on 429 / quota errors.
- * Tries each available key once before throwing.
+ * Execute a Gemini call with automatic key rotation on 429 / 503 errors.
+ * - On 429 (quota): rotates to the next key immediately.
+ * - On 503 (overload): waits 1 s then retries (same or next key).
+ * Tries each available key up to 2 times before giving up.
  *
  * @param {(client: GoogleGenerativeAI) => Promise<any>} fn
  * @returns {Promise<any>}
  */
 async function withKeyRotation(fn) {
-  const maxAttempts = keyManager.count;
+  const maxAttempts = Math.max(keyManager.count * 2, 3); // at least 3 tries
   let lastError;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -121,11 +134,17 @@ async function withKeyRotation(fn) {
       return await fn(client);
     } catch (err) {
       lastError = err;
-      if (isQuotaError(err) && attempt < maxAttempts - 1) {
+      if (!isRetryableError(err) || attempt >= maxAttempts - 1) throw err;
+
+      const status = err.status || err.httpStatusCode || err?.errorDetails?.[0]?.httpStatusCode;
+      if (status === 503) {
+        // Model overloaded — brief wait before retry helps more than instant key swap
+        const delay = 1000 * (attempt + 1); // 1 s, 2 s, ...
+        console.warn(`[gemini] 503 overloaded on attempt ${attempt + 1}, waiting ${delay}ms before retry…`);
+        await sleep(delay);
+      } else {
         console.warn(`[gemini] Key #${((keyManager._index - 1 + keyManager.count) % keyManager.count) + 1} hit quota limit, rotating to next key…`);
-        continue;
       }
-      throw err;
     }
   }
 
@@ -211,27 +230,25 @@ export async function callMentorGemini(history, userMessage, scenario) {
  * Evaluate a session transcript and return a structured score JSON.
  * Uses strict guardrails and JSON enforcement to ensure valid evaluation output.
  */
-export async function evaluateSession({ role, messages, tasksCompleted, emergencyTriggered, durationSeconds }) {
+export async function evaluateSession({ role, messages, tasksCompleted, emergencyTriggered, durationSeconds, totalTasks = 4 }) {
   const transcript = messages
     .filter(m => m.senderType !== 'system')
     .map(m => `[${m.senderType === 'user' ? 'User' : m.sender}]: ${m.content}`)
     .join('\n');
 
-  const prompt = `You are an expert workplace performance evaluator. Analyze the following work simulation transcript and return ONLY a valid JSON object (no markdown, no explanation, no backticks).
+  const prompt = `You are an expert workplace performance evaluator. Analyze the following work simulation transcript and return ONLY a valid JSON object.
 
-${GUARDRAIL}
-- You are ONLY evaluating the work simulation session
-- Return ONLY valid JSON, no markdown, no backticks, no extra text
+IMPORTANT: Return ONLY the raw JSON object below — no markdown fences, no backticks, no explanation, no extra text whatsoever.
 
 Role: ${role.toUpperCase()}
-Tasks completed: ${tasksCompleted.length}/4
+Tasks completed: ${tasksCompleted.length}/${totalTasks}
 Emergency handled: ${emergencyTriggered ? 'Yes' : 'No'}
 Session duration: ${Math.floor(durationSeconds / 60)} minutes
 
 Transcript:
 ${transcript.slice(0, 8000)}
 
-Return this exact JSON structure with ONLY these fields (no extra text, no markdown, no backticks):
+Return this exact JSON structure with ONLY these fields:
 {
   "overallScore": <0-100 integer>,
   "communication": <0-100 integer>,
@@ -249,8 +266,9 @@ Return this exact JSON structure with ONLY these fields (no extra text, no markd
     const evaluatorModel = client.getGenerativeModel({
       model: GEMINI_MODEL,
       generationConfig: {
-        maxOutputTokens: 1500,
+        maxOutputTokens: 4096,
         temperature: 0.4,
+        responseMimeType: 'application/json',
       },
     });
 

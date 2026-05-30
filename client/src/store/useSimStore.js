@@ -79,7 +79,10 @@ export const useSimStore = create((set, get) => ({
       if (timerSeconds <= 0) {
         clearInterval(id);
         set({ timerSeconds: 0, timerRunning: false, timerIntervalId: null });
-        endSession('timeout');
+        // Guard: endSession is set asynchronously by SimulationPage via setEndSessionFn.
+        // If it hasn't been set yet, skip silently — the useEffect in SimulationPage
+        // also watches timerSeconds === 0 and will trigger endSession from there.
+        if (typeof endSession === 'function') endSession('timeout');
         return;
       }
       set({ timerSeconds: timerSeconds - 1 });

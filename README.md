@@ -1,4 +1,4 @@
-# WorkPod 
+# WorkPod
 
 An AI-powered workplace simulation platform. Practice real job scenarios with AI teammates, handle live emergencies, collaborate with other humans in multiplayer, and get a scored performance report powered by Gemini.
 
@@ -13,13 +13,14 @@ An AI-powered workplace simulation platform. Practice real job scenarios with AI
 - **Team Meetings** — seamlessly embedded Jitsi video/audio conference rooms inside the simulation
 - **Teams-Style Sidebar** — unified navigation in `ChatSidebar.jsx` showing channels, team statuses, active humans, tasks checklist, and live progress
 - **Task Artifacts** — write and submit deliverables (PRD, code review, etc.) via embedded Monaco Editor
-- **Emergency Scenarios** — triggered at 60% session time, requiring urgent team response
+- **Emergency Scenarios** — triggered at 60% session time, requiring urgent team response (with a dedicated `EmergencyBanner` notification)
 - **Mentor Channel** — separate private channel with custom career-coaching prompts to ask your AI mentor questions
 - **Voice Input** — speak your messages using Chrome Web Speech API
+- **Theme Toggle** — switch between dark and light modes mid-session
 - **AI Performance Report** — evaluated on Communication, Task Management & Pressure Handling
 - **30-Day Learning Roadmap** — personalized, high-quality resource links generated after each session
 - **Guest + Auth** — play instantly as a guest, or sign in to save simulation history
-- **Premium SaaS UI** — Sleek dark theme, animated gradient typography, and glowing hover states across the application
+- **Premium SaaS UI** — sleek dark theme, animated gradient typography, and glowing hover states across the application
 
 ---
 
@@ -39,13 +40,25 @@ cd client && npm install
 
 **Server** — copy `.env.example` → `.env`:
 ```env
-GEMINI_KEY=your_gemini_api_key
-GEMINI_MODEL=gemini-2.5-flash        # optional, this is the default
+PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=any_random_secret_string
 CLIENT_URL=http://localhost:5173
-PORT=5000
+
+# Gemini model (optional — defaults to gemini-2.5-flash)
+GEMINI_MODEL=gemini-2.5-flash
+
+# Gemini API keys — supply one or many for round-robin rotation & quota failover
+GEMINI_KEY=your_primary_gemini_api_key
+GEMINI_KEY_1=
+GEMINI_KEY_2=
+GEMINI_KEY_3=
+gemini_key_4=
+geminikey5=
+gemini_key_6=
 ```
+
+> The server reads all numbered key variants in order and rotates through them automatically. Any key that hits a 429 quota error is skipped and the next one is tried. Falls back to `GEMINI_KEY` if no numbered keys are set.
 
 **Client** — copy `.env.example` → `.env`:
 ```env
@@ -75,7 +88,7 @@ Open `http://localhost:5173`
 | Editor / Visuals | `@excalidraw/excalidraw` (Whiteboard), `@monaco-editor/react` (Coding) |
 | Meetings | Jitsi Meet iframe integration |
 | Realtime | Socket.io-client / Socket.io |
-| HTTP | Axios |
+| HTTP | Axios (`src/lib/api.js`) |
 | Backend | Node.js + Express |
 | Database | MongoDB + Mongoose |
 | Auth | JWT (bcrypt) + guest mode (localStorage ID) |
@@ -87,18 +100,19 @@ Open `http://localhost:5173`
 ## How It Works
 
 ### 1. Role Selection
-Pick a role (SDE, HR, PM). A **Team Selection Modal** opens and queries the server in real-time for other humans already in an active room for that role. You can:
+Pick a role (SDE, HR, PM, SDE Intern, ML Intern). A **Team Selection Modal** opens and queries the server in real-time for other humans already in an active room for that role. You can:
 - **All AI Teammates** — solo session with AI personas only
 - **Join with Humans** — join an existing room where real users are waiting (enabled only when humans are found)
 
 ### 2. Simulation
 - An **Offer Letter** modal shows your project brief and deliverables before the 45-minute timer starts.
 - **Teams-style navigation** — switch between `#team-general` chat, a `#whiteboard` collaborative canvas, and your private italicized **Mentor channel** (Team Lead).
-- **Collaborative Whiteboard** — draw and model diagrams in real-time with excalidraw-synced canvases.
+- **Collaborative Whiteboard** — draw and model diagrams in real-time with Excalidraw-synced canvases.
 - **Embedded Team Meetings** — click the meeting icon in the top bar to spin up an instant, face-to-face Jitsi audio/video meeting room.
 - **Task Artifact Panel** — click any task in the sidebar to open a full-featured writing drawer with an integrated Monaco Code Editor, then submit your deliverables to auto-notify the team.
-- **Emergency Button** — appears after 60% of session time has elapsed, triggering a crisis scenario that demands urgent team response.
+- **Emergency Button** — appears after 60% of session time has elapsed, triggering a crisis scenario that demands urgent team response. An `EmergencyBanner` broadcasts the alert to all participants.
 - **Active Humans Count** — shown live in the sidebar roster ("In This Room") and top header.
+- **Theme Toggle** — switch between dark and light modes at any point via the top bar.
 
 ### 3. Report & Evaluation
 When the session ends (via manual submit or timeout), Gemini reviews the full session transcript and returns:
@@ -131,6 +145,7 @@ Two users picking the **same role** within a 2-minute window are auto-placed in 
 | Server → Client | `new-message` | `{ sender, senderType, content, channel, timestamp }` | Broadcast incoming chat message |
 | Server → Client | `ai-typing` | `{ typing, channel }` | Teammate typing indicator status |
 | Server → Client | `emergency-trigger` | `{ label, timestamp }` | Broadcast active emergency |
+| Server → Client | `team-composition-update` | `{ userId, preference, totalParticipants, humanParticipants }` | Broadcast team composition change |
 | Server → Client | `whiteboard-full-state` | `{ elements }` | Send full whiteboard state to joiner |
 | Server → Client | `whiteboard-update` | `{ elements }` | Broadcast whiteboard changes |
 
@@ -143,12 +158,15 @@ WorkPod/
 ├── client/                    # React + Vite frontend
 │   ├── check_whiteboard.cjs   # Automated Puppeteer test script for whiteboard channel
 │   └── src/
+│       ├── lib/
+│       │   └── api.js             # Axios instance pre-configured with VITE_API_URL
 │       ├── pages/
 │       │   ├── LandingPage.jsx
 │       │   ├── RoleSelectPage.jsx   # Team selection modal + live human query
 │       │   ├── SimulationPage.jsx   # Main sim UI (coordinates Chat, Whiteboard, Meetings)
 │       │   └── ReportPage.jsx       # Animated performance score report
 │       ├── components/
+│       │   ├── Navbar.jsx              # Top navigation bar (auth, guest, links)
 │       │   ├── TeamSelectionModal.jsx  # Choose AI-only or join humans
 │       │   ├── TeamDisplay.jsx         # Live team roster in sidebar
 │       │   ├── ChatWindow.jsx          # Message feed (supports system, user, teammates, mentor)
@@ -156,8 +174,10 @@ WorkPod/
 │       │   ├── TaskArtifact.jsx        # Write-up drawer with integrated Monaco Editor
 │       │   ├── SimTopBar.jsx           # Timer, room code, video meeting button, and emergency btn
 │       │   ├── MeetingModal.jsx        # Video/Audio conferencing room via embedded Jitsi Meet iframe
+│       │   ├── EmergencyBanner.jsx     # Full-width alert banner shown when emergency is triggered
 │       │   ├── Whiteboard.jsx          # Excalidraw real-time collaborative canvas
 │       │   ├── MessageBubble.jsx
+│       │   ├── ThemeToggle.jsx         # Dark / light mode toggle
 │       │   ├── TypingIndicator.jsx
 │       │   └── VoiceBtn.jsx
 │       ├── hooks/
@@ -182,9 +202,11 @@ WorkPod/
     │   ├── authController.js
     │   ├── sessionController.js
     │   └── roomController.js
-    ├── models/                # Mongoose schemas: User, Session
+    ├── middleware/            # Auth middleware (JWT verification)
+    ├── config/               # DB connection and config helpers
+    ├── models/               # Mongoose schemas: User, Session
     ├── routes/
-    └── scenarios/             # Server-side scenario JSON files (with specialized mentorPrompts)
+    └── scenarios/            # Server-side scenario JSON files (with specialized mentorPrompts)
 ```
 
 ---
@@ -204,17 +226,20 @@ WorkPod/
 
 ## Gemini Integration
 
-Two separate model instances are used:
+Three separate model configurations are used:
 
 | Model | `maxOutputTokens` | `temperature` | Used for |
 |-------|-------------------|---------------|----------|
 | Chat model | 300 | 0.85 | Teammate + mentor replies (short, in-character) |
-| Evaluator model | 1500 | 0.40 | End-of-session JSON report (needs full output) |
+| Evaluator model | 4096 | 0.40 | End-of-session JSON report (needs full output) |
+
+### API Key Rotation
+The server supports up to **6 Gemini API keys** for automatic round-robin rotation and quota failover. Keys are read from `GEMINI_KEY_1` through `gemini_key_6` (mixed casing variants). On a `429` quota error the next key is tried immediately; on a `503` overload error a brief back-off delay is applied before retrying. If no numbered keys are set, `GEMINI_KEY` is used as the single fallback.
 
 ### System Guardrails & Prompt Engineering
 - **Unified Workplace Guardrails** — Pre-appended to every chat and mentor prompt to guarantee the AI stays fully in character as a professional teammate. Includes strict defense mechanics that redirect jailbreak attempts or casual chat back to simulation topics.
 - **Custom Career Mentorship Channel** — The mentor channel injects a role-specific system prompt (`mentorPrompt`) loaded dynamically based on the current scenario, blended with career coaching guidelines, keeping it distinct and focused compared to standard teammate chat.
-- **JSON Evaluation Parser** — The evaluator prompt instructs Gemini to return a strict JSON object. The parser uses `indexOf('{')` and `lastIndexOf('}')` to robustly extract the JSON object, gracefully bypassing markdown code blocks or extra text added by the model.
+- **JSON Evaluation Parser** — The evaluator prompt instructs Gemini to return a strict JSON object with `responseMimeType: 'application/json'`. The parser additionally uses `indexOf('{')` and `lastIndexOf('}')` to robustly extract the JSON object, gracefully bypassing any markdown code blocks or extra text added by the model.
 
 ---
 

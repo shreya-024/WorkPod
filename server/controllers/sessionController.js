@@ -13,6 +13,7 @@ export const endSession = async (req, res) => {
       tasksCompleted,
       emergencyTriggered,
       durationSeconds,
+      totalTasks,
     } = req.body;
 
     if (!role || !roomId) {
@@ -28,6 +29,7 @@ export const endSession = async (req, res) => {
         tasksCompleted: tasksCompleted || [],
         emergencyTriggered: !!emergencyTriggered,
         durationSeconds: durationSeconds || 0,
+        totalTasks: totalTasks || 4,
       });
     } catch (geminiErr) {
       console.error('Evaluation error:', geminiErr.message);

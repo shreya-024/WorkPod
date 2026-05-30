@@ -60,8 +60,7 @@ export default function SimulationPage() {
   }, [showOfferLetter, startTimer]);
 
   const elapsed = 2700 - timerSeconds;
-  const percentElapsed = Math.round((elapsed / 2700) * 100);
-  const showEmergencyBtn = percentElapsed >= 60 && !isEmergencyActive;
+  const showEmergencyBtn = elapsed >= 180 && !isEmergencyActive; // show after 3 mins
 
   useEffect(() => {
     if (timerSeconds === 0) endSession('timeout');
@@ -87,6 +86,7 @@ export default function SimulationPage() {
       tasksCompleted: [...completedTasks],
       emergencyTriggered: isEmergencyActive,
       durationSeconds,
+      totalTasks: scenario?.tasks?.length || 4,
     };
 
     try {
@@ -98,7 +98,7 @@ export default function SimulationPage() {
       setReport({
         overallScore: 55,
         communication: 55,
-        taskManagement: completedTasks.size * 25,
+        taskManagement: Math.min(completedTasks.size * 25, 100),
         pressureHandling: isEmergencyActive ? 60 : 45,
         feedback: ['Session could not be evaluated — server error.', 'Your data was not saved.', 'Please try again.'],
         roadmap: [],
